@@ -5,12 +5,18 @@
   "projectType": "library",
   "targets": {
     "build": {
-      "executor": "@nrwl/vite:build",
-      "outputs": [
-        "{options.outputPath}"
-      ],
+      "executor": "@nrwl/rollup:rollup",
+      "outputs": ["{options.outputPath}"],
       "options": {
-        "outputPath": "dist/packages/tinybased"
+        "outputPath": "dist/packages/tinybased",
+        "main": "packages/tinybased/src/index.ts",
+        "tsConfig": "packages/tinybased/tsconfig.lib.json",
+        "format": ["esm", "cjs"],
+        "assets": [],
+        "project": "packages/tinybased/package.json",
+        "compiler": "babel",
+        "updateBuildableProjectDepsInPackageJson": true,
+        "external": ["tinybase"]
       }
     },
     "publish": {
@@ -18,15 +24,11 @@
       "options": {
         "command": "node tools/scripts/publish.mjs tinybased {args.ver} {args.tag}"
       },
-      "dependsOn": [
-        "build"
-      ]
+      "dependsOn": ["build"]
     },
     "test": {
       "executor": "@nrwl/vite:test",
-      "outputs": [
-        "coverage/packages/tinybased"
-      ],
+      "outputs": ["coverage/packages/tinybased"],
       "options": {
         "passWithNoTests": true,
         "reportsDirectory": "../../coverage/packages/tinybased"
@@ -34,13 +36,9 @@
     },
     "lint": {
       "executor": "@nrwl/linter:eslint",
-      "outputs": [
-        "{options.outputFile}"
-      ],
+      "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": [
-          "packages/tinybased/**/*.ts"
-        ]
+        "lintFilePatterns": ["packages/tinybased/**/*.ts"]
       }
     }
   },
