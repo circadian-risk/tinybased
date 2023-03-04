@@ -1,0 +1,26 @@
+lockfileVersion: 5.4
+
+specifiers:
+  prettier: ^2.8.4
+  tslib: ^2.5.0
+
+devDependencies:
+  prettier: 2.8.4
+  tslib: 2.5.0
+
+packages:
+  /prettier/2.8.4:
+    resolution:
+      {
+        integrity: sha512-vIS4Rlc2FNh0BySk3Wkd6xmwxB0FpOndW5fisM5H8hsZSxU2VWVB5CWIkIjWvrHjIhxk2g3bfMKM87zNTrZddw==,
+      }
+    engines: { node: '>=10.13.0' }
+    hasBin: true
+    dev: true
+
+  /tslib/2.5.0:
+    resolution:
+      {
+        integrity: sha512-336iVw3rtn2BUK7ORdIAHTyxHGRIHVReokCR3XjbckJMK7ms8FysBfhLR8IXnAgy7T0PTPNBWKiH514FOW/WSg==,
+      }
+    dev: true
