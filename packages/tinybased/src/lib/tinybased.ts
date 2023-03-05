@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import {
   createStore,
   Store,
@@ -6,24 +7,101 @@ import {
   createRelationships,
   Metrics,
   Relationships,
+  Queries,
 } from 'tinybase';
 
-type TableSchema = Record<string, string | number | boolean>;
+type Cell = string | number | boolean;
+type TableSchema = Record<string, Cell>;
 type TinyBaseSchema = Record<string, TableSchema>;
 
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
 
+class SimpleQuery<
+  TTable extends TableSchema = {},
+  TCells extends keyof TTable = never
+> {
+  constructor(
+    public readonly queries: Queries,
+    public readonly queryId: string
+  ) {}
+
+  public getResultRowIds() {
+    return this.queries.getResultRowIds(this.queryId);
+  }
+
+  public getResultTable(): Record<string, Pick<TTable, TCells>> {
+    return this.queries.getResultTable(this.queryId) as Record<
+      string,
+      Pick<TTable, TCells>
+    >;
+  }
+}
+
+class SimpleQueryBuilder<
+  TTable extends TableSchema = {},
+  TCells extends keyof TTable = never
+> {
+  // TODO maybe we should model this as a Map/Record so that conditions for a given cell
+  // can be overwritten. This would allow for easier composition of query builder instances
+  private wheres: Array<[string, Cell]> = [];
+  private selects: Array<TCells> = [];
+
+  constructor(
+    private readonly table: keyof TTable,
+    private readonly queries: Queries
+  ) {}
+
+  select<TCell extends keyof TTable>(
+    cell: TCell
+  ): SimpleQueryBuilder<TTable, TCells | TCell> {
+    this.selects.push(cell as any);
+    return this as SimpleQueryBuilder<TTable, TCells | TCell>;
+  }
+
+  where<TCell extends keyof TTable, TValue extends TTable[TCell]>(
+    cell: TCell,
+    value: TValue
+  ): SimpleQueryBuilder<TTable, TCells> {
+    this.wheres.push([cell as string, value]);
+    return this;
+  }
+
+  build(): SimpleQuery<TTable, TCells> {
+    const queryId = `${this.table as string}-where-${this.wheres.join('_')}`;
+    this.queries.setQueryDefinition(
+      queryId,
+      this.table as string,
+      ({ where, select }) => {
+        this.selects.forEach((s) => select(s as string));
+        this.wheres.forEach(([cell, value]) => {
+          where(cell, value);
+        });
+      }
+    );
+
+    return new SimpleQuery(this.queries, queryId);
+  }
+}
+
 // eslint-disable-next-line @typescript-eslint/ban-types
 export class TinyBased<
   TSchema extends TinyBaseSchema = {},
-  TRelationships extends string = never
+  TRelationships extends string = never,
+  TQueries extends Record<string, any> = {}
 > {
   constructor(
-    private readonly store: Store,
-    private readonly metrics: Metrics,
-    private readonly relationships: Relationships
+    public readonly store: Store,
+    public readonly metrics: Metrics,
+    public readonly relationships: Relationships,
+    public readonly queries: Queries
   ) {}
+
+  simpleQuery<TTable extends keyof TSchema>(
+    table: TTable
+  ): SimpleQueryBuilder<TSchema[TTable]> {
+    return new SimpleQueryBuilder(table as string, this.queries);
+  }
 
   getRowCount<TTable extends keyof TSchema>(table: TTable) {
     return this.metrics.getMetric(makeTableRowCountMetricName(table as string));
@@ -68,16 +146,19 @@ export class TinyBased<
 
 export class Builder<
   TSchema extends TinyBaseSchema = {},
-  TRelationships extends string = never
+  TRelationships extends string = never,
+  TQueries extends Record<string, any> = {}
 > {
   private readonly store: Store;
   private readonly metrics: Metrics;
   private readonly relationships: Relationships;
+  private readonly queries: Queries;
 
   constructor() {
     this.store = createStore();
     this.metrics = createMetrics(this.store);
     this.relationships = createRelationships(this.store);
+    this.queries = createQueries(this.store);
   }
 
   public defineRelationship<
@@ -98,7 +179,10 @@ export class Builder<
       cellFrom as string
     );
 
-    return this as any;
+    return this as unknown as Builder<
+      TSchema,
+      TRelationships | TRelationshipName
+    >;
   }
 
   public defineTable<
@@ -122,7 +206,12 @@ export class Builder<
     >;
   }
 
-  public build(): TinyBased<TSchema, TRelationships> {
-    return new TinyBased(this.store, this.metrics, this.relationships);
+  public build(): TinyBased<TSchema, TRelationships, TQueries> {
+    return new TinyBased(
+      this.store,
+      this.metrics,
+      this.relationships,
+      this.queries
+    );
   }
 }
