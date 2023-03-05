@@ -9,17 +9,12 @@ import {
   Relationships,
   Queries,
 } from 'tinybase';
-
-type Cell = string | number | boolean;
-type TableSchema = Record<string, Cell>;
-type TinyBaseSchema = Record<string, TableSchema>;
+import { Aggregations, Cell, TableSchema, TinyBaseSchema } from './types';
 
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
 
-type Aggregations = 'avg' | 'count' | 'sum' | 'max' | 'min';
-
-class SimpleQuery<
+export class SimpleQuery<
   TTable extends TableSchema = {},
   TCells extends keyof TTable = never
 > {
@@ -40,7 +35,7 @@ class SimpleQuery<
   }
 }
 
-class SimpleAggregateQuery<TAggregation extends Aggregations> {
+export class SimpleAggregateQuery<TAggregation extends Aggregations> {
   constructor(
     public readonly queries: Queries,
     public readonly queryId: string,
@@ -54,7 +49,7 @@ class SimpleAggregateQuery<TAggregation extends Aggregations> {
   }
 }
 
-class SimpleQueryBuilder<
+export class SimpleQueryBuilder<
   TTable extends TableSchema = {},
   TCells extends keyof TTable = never
 > {
@@ -191,6 +186,15 @@ export class TinyBased<
       rowId,
       cellId as string
     ) as TSchema[TTable][TCell];
+  }
+
+  setCell<TTable extends keyof TSchema, TCell extends keyof TSchema[TTable]>(
+    table: TTable,
+    rowId: string,
+    cellId: TCell,
+    value: TSchema[TTable][TCell]
+  ) {
+    return this.store.setCell(table as string, rowId, cellId as string, value);
   }
 
   getLocalIds(relationshipName: TRelationships, rowId: string) {
