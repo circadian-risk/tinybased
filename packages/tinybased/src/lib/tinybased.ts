@@ -17,6 +17,8 @@ type TinyBaseSchema = Record<string, TableSchema>;
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
 
+type Aggregations = 'avg' | 'count' | 'sum' | 'max' | 'min';
+
 class SimpleQuery<
   TTable extends TableSchema = {},
   TCells extends keyof TTable = never
@@ -35,6 +37,20 @@ class SimpleQuery<
       string,
       Pick<TTable, TCells>
     >;
+  }
+}
+
+class SimpleAggregateQuery<TAggregation extends Aggregations> {
+  constructor(
+    public readonly queries: Queries,
+    public readonly queryId: string,
+    private readonly aggregation: TAggregation
+  ) {}
+
+  getAggregation(): {
+    [key in TAggregation]?: number;
+  } {
+    return this.queries.getResultTable(this.queryId)['0'] as any;
   }
 }
 
@@ -67,20 +83,62 @@ class SimpleQueryBuilder<
     return this;
   }
 
+  /**
+   * Turns the query into an aggregation.
+   * For simplicity, this will also terminate the query builder chain
+   * and return an alternative query type which has simplified access to the
+   * result of the aggregation operation.
+   * @param cell
+   * @param aggregateOperation
+   */
+  aggregate<TCell extends keyof TTable, TAggregation extends Aggregations>(
+    cell: TCell,
+    aggregateOperation: TAggregation
+  ) {
+    const queryId = this.internalBuild({
+      aggregateOperation,
+      cell: cell as string,
+    });
+
+    return new SimpleAggregateQuery(this.queries, queryId, aggregateOperation);
+  }
+
   build(): SimpleQuery<TTable, TCells> {
-    const queryId = `${this.table as string}-where-${this.wheres.join('_')}`;
+    const queryId = this.internalBuild();
+
+    return new SimpleQuery(this.queries, queryId);
+  }
+
+  private internalBuild(aggOptions?: {
+    cell: string;
+    aggregateOperation: Aggregations;
+  }) {
+    let queryId = `${this.table as string}-select-${this.selects.join(
+      '_'
+    )}-where-${this.wheres.join('_')}`;
+
+    if (aggOptions) {
+      queryId = `${queryId}-group_${aggOptions.cell}`;
+    }
+
     this.queries.setQueryDefinition(
       queryId,
       this.table as string,
-      ({ where, select }) => {
+      ({ where, select, group }) => {
         this.selects.forEach((s) => select(s as string));
         this.wheres.forEach(([cell, value]) => {
           where(cell, value);
         });
+
+        if (aggOptions) {
+          group(aggOptions.cell, aggOptions.aggregateOperation).as(
+            aggOptions.aggregateOperation
+          );
+        }
       }
     );
 
-    return new SimpleQuery(this.queries, queryId);
+    return queryId;
   }
 }
 
