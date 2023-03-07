@@ -33,8 +33,8 @@ const exampleNote: NoteRow = {
 const baseBuilder = new SchemaBuilder().defineTable('users', exampleUser);
 
 describe('tinybased', () => {
-  it('should handle type safe rows and cells', () => {
-    const based = baseBuilder.build();
+  it('should handle type safe rows and cells', async () => {
+    const based = await baseBuilder.build();
     based.setRow('users', '1', exampleUser);
 
     expect(based.getRow('users', '1')).toEqual(exampleUser);
@@ -44,8 +44,8 @@ describe('tinybased', () => {
 
   // TODO: extract common setup boilerplate
   describe('queries', () => {
-    it('handles simple queries', () => {
-      const based = new SchemaBuilder()
+    it('handles simple queries', async () => {
+      const based = await new SchemaBuilder()
         .defineTable('users', exampleUser)
         .defineTable('notes', exampleNote)
         .build();
@@ -95,8 +95,8 @@ describe('tinybased', () => {
       });
     });
 
-    it('handles simple aggregate queries', () => {
-      const based = new SchemaBuilder()
+    it('handles simple aggregate queries', async () => {
+      const based = await new SchemaBuilder()
         .defineTable('users', exampleUser)
         .defineTable('notes', exampleNote)
         .build();
@@ -140,21 +140,23 @@ describe('tinybased', () => {
   });
 
   describe('metrics', () => {
-    it('maintains a metric that exposes row count for a table', () => {
-      const based = baseBuilder.build();
+    it('maintains a metric that exposes row count for a table', async () => {
+      const based = await baseBuilder.build();
       based.setRow('users', '1', exampleUser);
 
       expect(based.getRowCount('users')).toBe(1);
+
       based.setRow('users', '2', exampleUser);
       expect(based.getRowCount('users')).toBe(2);
+
       based.deleteRow('users', '2');
       expect(based.getRowCount('users')).toBe(1);
     });
   });
 
   describe('relationships', () => {
-    it('allows resolving ids from both sides of a defined relationship', () => {
-      const based = new SchemaBuilder()
+    it('allows resolving ids from both sides of a defined relationship', async () => {
+      const based = await new SchemaBuilder()
         .defineTable('users', exampleUser)
         .defineTable('notes', exampleNote)
         .defineRelationship('userNotes', 'notes', 'users', 'userId')
@@ -171,6 +173,21 @@ describe('tinybased', () => {
 
       const noteUserId = based.getRemoteRowId('userNotes', NOTE_ID);
       expect(noteUserId).toBe(USER_ID_1);
+    });
+  });
+
+  describe('hydration', () => {
+    it('should hydrate upon creation using provided hydrators', async () => {
+      const based = await baseBuilder
+        .defineTable('notes', exampleNote)
+        .defineHydrators({
+          users: () => Promise.resolve([exampleUser]),
+          notes: () => Promise.resolve([exampleNote]),
+        })
+        .build();
+
+      expect(based.getRow('users', USER_ID_1)).toEqual(exampleUser);
+      expect(based.getRow('notes', NOTE_ID)).toEqual(exampleNote);
     });
   });
 });

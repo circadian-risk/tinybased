@@ -1,6 +1,11 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { TinyBased } from './tinybased';
-import { RelationshipDefinition, TableSchema, TinyBaseSchema } from './types';
+import {
+  RelationshipDefinition,
+  SchemaHydrators,
+  TableSchema,
+  TinyBaseSchema,
+} from './types';
 
 export class SchemaBuilder<
   TSchema extends TinyBaseSchema = {},
@@ -8,6 +13,7 @@ export class SchemaBuilder<
 > {
   private readonly tables: Set<string> = new Set();
   private readonly relationshipDefinitions: RelationshipDefinition[] = [];
+  private hydrators: SchemaHydrators<TSchema> = {} as SchemaHydrators<TSchema>;
 
   public defineRelationship<
     TRelationshipName extends string,
@@ -51,7 +57,20 @@ export class SchemaBuilder<
     >;
   }
 
-  public build(): TinyBased<TSchema, TRelationships> {
-    return new TinyBased(this.tables, this.relationshipDefinitions);
+  public defineHydrators(hydrators: SchemaHydrators<TSchema>) {
+    this.hydrators = hydrators;
+    return this;
+  }
+
+  public async build(): Promise<TinyBased<TSchema, TRelationships>> {
+    const tb = new TinyBased(
+      this.tables,
+      this.relationshipDefinitions,
+      this.hydrators
+    );
+    if (Object.keys(this.hydrators).length) {
+      await tb.hydrate();
+    }
+    return tb as TinyBased<TSchema, TRelationships>;
   }
 }

@@ -10,7 +10,12 @@ import {
   createQueries,
 } from 'tinybase';
 import { SimpleQueryBuilder } from './queries';
-import { RelationshipDefinition, TinyBaseSchema } from './types';
+import {
+  RelationshipDefinition,
+  SchemaHydrators,
+  TinyBaseSchema,
+} from './types';
+import keyBy from 'lodash/keyBy';
 
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
@@ -27,7 +32,8 @@ export class TinyBased<
 
   constructor(
     tableNames: Set<string>,
-    relationshipDefs: RelationshipDefinition[] = []
+    relationshipDefs: RelationshipDefinition[] = [],
+    private readonly hydrators: SchemaHydrators<TSchema> = {} as SchemaHydrators<TSchema>
   ) {
     this.store = createStore();
     this.metrics = createMetrics(this.store);
@@ -49,6 +55,16 @@ export class TinyBased<
     relationshipDefs.forEach(({ cell, from, to, name }) => {
       this.relationships.setRelationshipDefinition(name, from, to, cell);
     });
+  }
+
+  public async hydrate() {
+    await Promise.all(
+      Object.entries(this.hydrators).map(async ([table, hydrator]) => {
+        const entries = await hydrator();
+        // TODO currently we assume the entity will have a property called id
+        this.store.setTable(table, keyBy(entries, 'id'));
+      })
+    );
   }
 
   simpleQuery<TTable extends keyof TSchema>(

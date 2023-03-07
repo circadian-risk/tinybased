@@ -5,7 +5,8 @@ import {
   useRow as tbUseRow,
   useCell as tbUseCell,
 } from 'tinybase/ui-react';
-import { SimpleQuery, TinyBased } from './tinybased';
+import { SimpleQuery } from './queries';
+import { TinyBased } from './tinybased';
 import { TableSchema, TinyBaseSchema } from './types';
 
 export const useSimpleQueryResultTable = <
@@ -24,10 +25,23 @@ export function useSimpleQueryResultIds(query: SimpleQuery) {
   return useResultRowIds(query.queryId, query.queries);
 }
 
+export type TinyBasedReactHooks<TSchema extends TinyBaseSchema = {}> = {
+  useCell: <TTable extends keyof TSchema, TCell extends keyof TSchema[TTable]>(
+    table: TTable,
+    rowId: string,
+    cellId: TCell
+  ) => TSchema[TTable][TCell];
+
+  useRow: <TTable extends keyof TSchema>(
+    table: TTable,
+    rowId: string
+  ) => TSchema[TTable];
+};
+
 export function makeTinybasedHooks<
   TSchema extends TinyBaseSchema = {},
   TRelationships extends string = never
->(tinyBased: TinyBased<TSchema, TRelationships>) {
+>(tinyBased: TinyBased<TSchema, TRelationships>): TinyBasedReactHooks<TSchema> {
   const store = tinyBased.store;
 
   const useCell = <
@@ -38,14 +52,19 @@ export function makeTinybasedHooks<
     rowId: string,
     cellId: TCell
   ) => {
-    return tbUseCell(table as string, rowId, cellId as string, store);
+    return tbUseCell(
+      table as string,
+      rowId,
+      cellId as string,
+      store
+    ) as TSchema[TTable][TCell];
   };
 
   const useRow = <TTable extends keyof TSchema>(
     table: TTable,
     rowId: string
   ) => {
-    return tbUseRow(table as string, rowId, store);
+    return tbUseRow(table as string, rowId, store) as TSchema[TTable];
   };
 
   return {

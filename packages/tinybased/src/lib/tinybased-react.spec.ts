@@ -1,15 +1,20 @@
-import { tinyBasedSample } from '../fixture/database';
+import { makeTinyBasedTestFixture, Schema } from '../fixture/database';
 import {
   makeTinybasedHooks,
   useSimpleQueryResultIds,
   useSimpleQueryResultTable,
+  TinyBasedReactHooks,
 } from './tinybased-react';
 
 import { renderHook, act } from '@testing-library/react-hooks';
 
-const hooks = makeTinybasedHooks(tinyBasedSample);
-
 describe('Tinybased React', () => {
+  let hooks: TinyBasedReactHooks<Schema>;
+  let based: Awaited<ReturnType<typeof makeTinyBasedTestFixture>>;
+  beforeAll(async () => {
+    based = await makeTinyBasedTestFixture();
+    hooks = makeTinybasedHooks(based);
+  });
   describe('makeHooks', () => {
     test('useCell', () => {
       const { result } = renderHook(() =>
@@ -18,7 +23,7 @@ describe('Tinybased React', () => {
       expect(result.current).toEqual('Bob');
 
       act(() => {
-        tinyBasedSample.setCell('users', 'user2', 'name', 'Bob Ross');
+        based.setCell('users', 'user2', 'name', 'Bob Ross');
       });
 
       expect(result.current).toEqual('Bob Ross');
@@ -33,7 +38,7 @@ describe('Tinybased React', () => {
         isAdmin: true,
       });
 
-      tinyBasedSample.setCell('users', 'user1', 'name', 'Jesse Carter');
+      based.setCell('users', 'user1', 'name', 'Jesse Carter');
 
       expect(result.current).toEqual({
         id: 'user1',
@@ -46,7 +51,7 @@ describe('Tinybased React', () => {
   describe('queries', () => {
     describe('simple queries', () => {
       it('handles result row ids', () => {
-        const query = tinyBasedSample
+        const query = based
           .simpleQuery('notes')
           .select('text')
           .where('userId', 'user1')
@@ -56,7 +61,7 @@ describe('Tinybased React', () => {
         expect(result.current).toEqual(['noteId1', 'noteId2']);
       });
       it('handles result table', () => {
-        const query = tinyBasedSample
+        const query = based
           .simpleQuery('notes')
           .select('text')
           .where('userId', 'user1')
@@ -69,7 +74,7 @@ describe('Tinybased React', () => {
           noteId2: { text: 'TinyBased' },
         });
 
-        tinyBasedSample.setCell('notes', 'noteId1', 'text', 'Hello TinyBased');
+        based.setCell('notes', 'noteId1', 'text', 'Hello TinyBased');
 
         expect(result.current).toEqual({
           noteId1: { text: 'Hello TinyBased' },
