@@ -1,7 +1,16 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { Store, Metrics, Relationships, Queries } from 'tinybase';
+import {
+  Store,
+  Metrics,
+  Relationships,
+  Queries,
+  createStore,
+  createMetrics,
+  createRelationships,
+  createQueries,
+} from 'tinybase';
 import { SimpleQueryBuilder } from './queries';
-import { TinyBaseSchema } from './types';
+import { RelationshipDefinition, TinyBaseSchema } from './types';
 
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
@@ -11,12 +20,36 @@ export class TinyBased<
   TSchema extends TinyBaseSchema = {},
   TRelationships extends string = never
 > {
+  public readonly store: Store;
+  public readonly metrics: Metrics;
+  public readonly relationships: Relationships;
+  public readonly queries: Queries;
+
   constructor(
-    public readonly store: Store,
-    public readonly metrics: Metrics,
-    public readonly relationships: Relationships,
-    public readonly queries: Queries
-  ) {}
+    tableNames: Set<string>,
+    relationshipDefs: RelationshipDefinition[] = []
+  ) {
+    this.store = createStore();
+    this.metrics = createMetrics(this.store);
+    this.relationships = createRelationships(this.store);
+    this.queries = createQueries(this.store);
+
+    for (const table of tableNames) {
+      // TODO: Do we want to actually define schema here on the tinybase instance
+
+      // Define a metric that will make it easy to maintain the count of rows in this table
+      this.metrics.setMetricDefinition(
+        makeTableRowCountMetricName(table),
+        table,
+        'sum',
+        () => 1
+      );
+    }
+
+    relationshipDefs.forEach(({ cell, from, to, name }) => {
+      this.relationships.setRelationshipDefinition(name, from, to, cell);
+    });
+  }
 
   simpleQuery<TTable extends keyof TSchema>(
     table: TTable

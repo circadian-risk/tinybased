@@ -1,35 +1,13 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import {
-  createStore,
-  Store,
-  createMetrics,
-  createQueries,
-  createRelationships,
-  Metrics,
-  Relationships,
-  Queries,
-} from 'tinybase';
 import { TinyBased } from './tinybased';
-import { TableSchema, TinyBaseSchema } from './types';
-
-const makeTableRowCountMetricName = (tableName: string) =>
-  `tinybased_internal_row_count_${tableName}`;
+import { RelationshipDefinition, TableSchema, TinyBaseSchema } from './types';
 
 export class SchemaBuilder<
   TSchema extends TinyBaseSchema = {},
   TRelationships extends string = never
 > {
-  private readonly store: Store;
-  private readonly metrics: Metrics;
-  private readonly relationships: Relationships;
-  private readonly queries: Queries;
-
-  constructor() {
-    this.store = createStore();
-    this.metrics = createMetrics(this.store);
-    this.relationships = createRelationships(this.store);
-    this.queries = createQueries(this.store);
-  }
+  private readonly tables: Set<string> = new Set();
+  private readonly relationshipDefinitions: RelationshipDefinition[] = [];
 
   public defineRelationship<
     TRelationshipName extends string,
@@ -42,12 +20,12 @@ export class SchemaBuilder<
     tableTo: TTableTo,
     cellFrom: TCellFrom
   ): SchemaBuilder<TSchema, TRelationships | TRelationshipName> {
-    this.relationships.setRelationshipDefinition(
+    this.relationshipDefinitions.push({
       name,
-      tableFrom as string,
-      tableTo as string,
-      cellFrom as string
-    );
+      from: tableFrom as string,
+      to: tableTo as string,
+      cell: cellFrom as string,
+    });
 
     return this as unknown as SchemaBuilder<
       TSchema,
@@ -62,26 +40,18 @@ export class SchemaBuilder<
     tableName: TTableName,
     exampleRow: TTableSchema
   ): SchemaBuilder<TSchema & Record<TTableName, TTableSchema>, TRelationships> {
-    // Define a metric that will make it easy to maintain the count of rows in this table
-    this.metrics.setMetricDefinition(
-      makeTableRowCountMetricName(tableName),
-      tableName,
-      'sum',
-      () => 1
-    );
+    if (this.tables.has(tableName)) {
+      throw new Error(`Table ${tableName} already defined`);
+    }
 
-    // TODO: Do we want to actually define schema here on the tinybase instance?
+    this.tables.add(tableName);
+
     return this as unknown as SchemaBuilder<
       TSchema & Record<TTableName, TTableSchema>
     >;
   }
 
   public build(): TinyBased<TSchema, TRelationships> {
-    return new TinyBased(
-      this.store,
-      this.metrics,
-      this.relationships,
-      this.queries
-    );
+    return new TinyBased(this.tables, this.relationshipDefinitions);
   }
 }
