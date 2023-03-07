@@ -141,7 +141,6 @@ export class SimpleQueryBuilder<
 export class TinyBased<
   TSchema extends TinyBaseSchema = {},
   TRelationships extends string = never,
-  TQueries extends Record<string, any> = {}
 > {
   constructor(
     public readonly store: Store,
@@ -268,7 +267,7 @@ export class Builder<
     >;
   }
 
-  public build(): TinyBased<TSchema, TRelationships, TQueries> {
+  public build(): TinyBased<TSchema, TRelationships> {
     return new TinyBased(
       this.store,
       this.metrics,
