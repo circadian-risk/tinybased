@@ -1,4 +1,4 @@
-import { SchemaBuilder } from './tinybased';
+import { SchemaBuilder } from './SchemaBuilder';
 
 type UserRow = {
   id: string;
