@@ -140,7 +140,7 @@ export class SimpleQueryBuilder<
 // eslint-disable-next-line @typescript-eslint/ban-types
 export class TinyBased<
   TSchema extends TinyBaseSchema = {},
-  TRelationships extends string = never,
+  TRelationships extends string = never
 > {
   constructor(
     public readonly store: Store,
@@ -205,10 +205,9 @@ export class TinyBased<
   }
 }
 
-export class Builder<
+export class SchemaBuilder<
   TSchema extends TinyBaseSchema = {},
-  TRelationships extends string = never,
-  TQueries extends Record<string, any> = {}
+  TRelationships extends string = never
 > {
   private readonly store: Store;
   private readonly metrics: Metrics;
@@ -232,7 +231,7 @@ export class Builder<
     tableFrom: TTableFrom,
     tableTo: TTableTo,
     cellFrom: TCellFrom
-  ): Builder<TSchema, TRelationships | TRelationshipName> {
+  ): SchemaBuilder<TSchema, TRelationships | TRelationshipName> {
     this.relationships.setRelationshipDefinition(
       name,
       tableFrom as string,
@@ -240,7 +239,7 @@ export class Builder<
       cellFrom as string
     );
 
-    return this as unknown as Builder<
+    return this as unknown as SchemaBuilder<
       TSchema,
       TRelationships | TRelationshipName
     >;
@@ -252,7 +251,7 @@ export class Builder<
   >(
     tableName: TTableName,
     exampleRow: TTableSchema
-  ): Builder<TSchema & Record<TTableName, TTableSchema>, TRelationships> {
+  ): SchemaBuilder<TSchema & Record<TTableName, TTableSchema>, TRelationships> {
     // Define a metric that will make it easy to maintain the count of rows in this table
     this.metrics.setMetricDefinition(
       makeTableRowCountMetricName(tableName),
@@ -262,7 +261,7 @@ export class Builder<
     );
 
     // TODO: Do we want to actually define schema here on the tinybase instance?
-    return this as unknown as Builder<
+    return this as unknown as SchemaBuilder<
       TSchema & Record<TTableName, TTableSchema>
     >;
   }

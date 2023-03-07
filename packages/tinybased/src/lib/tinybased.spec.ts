@@ -1,4 +1,4 @@
-import { Builder } from './tinybased';
+import { SchemaBuilder } from './tinybased';
 
 type UserRow = {
   id: string;
@@ -30,7 +30,7 @@ const exampleNote: NoteRow = {
   userId: USER_ID_1,
 };
 
-const baseBuilder = new Builder().defineTable('users', exampleUser);
+const baseBuilder = new SchemaBuilder().defineTable('users', exampleUser);
 
 describe('tinybased', () => {
   it('should handle type safe rows and cells', () => {
@@ -45,7 +45,7 @@ describe('tinybased', () => {
   // TODO: extract common setup boilerplate
   describe('queries', () => {
     it('handles simple queries', () => {
-      const based = new Builder()
+      const based = new SchemaBuilder()
         .defineTable('users', exampleUser)
         .defineTable('notes', exampleNote)
         .build();
@@ -96,7 +96,7 @@ describe('tinybased', () => {
     });
 
     it('handles simple aggregate queries', () => {
-      const based = new Builder()
+      const based = new SchemaBuilder()
         .defineTable('users', exampleUser)
         .defineTable('notes', exampleNote)
         .build();
@@ -154,7 +154,7 @@ describe('tinybased', () => {
 
   describe('relationships', () => {
     it('allows resolving ids from both sides of a defined relationship', () => {
-      const based = new Builder()
+      const based = new SchemaBuilder()
         .defineTable('users', exampleUser)
         .defineTable('notes', exampleNote)
         .defineRelationship('userNotes', 'notes', 'users', 'userId')

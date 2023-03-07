@@ -1,4 +1,4 @@
-import { Builder } from '../lib/tinybased';
+import { SchemaBuilder } from '../lib/tinybased';
 
 type UserRow = {
   id: string;
@@ -29,7 +29,7 @@ const exampleNote: NoteRow = {
   userId: USER_ID_1,
 };
 
-const tinyBasedSample = new Builder()
+const tinyBasedSample = new SchemaBuilder()
   .defineTable('users', exampleUser)
   .defineTable('notes', exampleNote)
   .build();
