@@ -1,11 +1,21 @@
-import { SchemaBuilder } from '../';
+import { ParseSchema, SchemaBuilder } from '../';
 
-type UserRow = {
-  id: string;
-  name: string;
-  age: number;
-  isAdmin: boolean;
+const userSchema = {
+  id: String,
+  name: String,
+  age: Number,
+  isAdmin: Boolean,
 };
+
+const noteSchema = {
+  id: String,
+  text: String,
+  userId: String,
+};
+
+type UserRow = ParseSchema<typeof userSchema>;
+type NoteRow = ParseSchema<typeof noteSchema>;
+
 const USER_ID_1 = 'user1';
 const USER_ID_2 = 'user2';
 const NOTE_ID = 'noteId1';
@@ -23,12 +33,6 @@ const user2: UserRow = {
   ...user1,
   id: USER_ID_2,
   name: 'Bob',
-};
-
-type NoteRow = {
-  id: string;
-  text: string;
-  userId: string;
 };
 
 const note1: NoteRow = {
@@ -56,8 +60,8 @@ export type Schema = {
 
 export async function makeTinyBasedTestFixture() {
   const tinyBasedSample = await new SchemaBuilder()
-    .defineTable('users', user1)
-    .defineTable('notes', note1)
+    .defineTable('users', userSchema)
+    .defineTable('notes', noteSchema)
     .defineHydrators({
       users: () => Promise.resolve([user1, user2]),
       notes: () => Promise.resolve([note1, note2, note3]),

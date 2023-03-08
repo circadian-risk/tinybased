@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { TinyBased } from './tinybased';
 import {
+  ParseSchema,
   RelationshipDefinition,
   RowChangeHandler,
+  Schema,
   SchemaHydrators,
-  TableSchema,
   TinyBaseSchema,
 } from './types';
 
@@ -44,10 +45,11 @@ export class SchemaBuilder<
 
   public defineTable<
     TTableName extends string,
-    TTableSchema extends TableSchema
+    TDSchema extends Schema,
+    TTableSchema = ParseSchema<TDSchema>
   >(
     tableName: TTableName,
-    exampleRow: TTableSchema
+    _tableSchema: TDSchema
   ): SchemaBuilder<TSchema & Record<TTableName, TTableSchema>, TRelationships> {
     if (this.tables.has(tableName)) {
       throw new Error(`Table ${tableName} already defined`);

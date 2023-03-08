@@ -1,37 +1,37 @@
 import { SchemaBuilder } from './SchemaBuilder';
 import { TableSchema } from './types';
 
-type UserRow = {
-  id: string;
-  name: string;
-  age: number;
-  isAdmin: boolean;
-};
-
 const USER_ID_1 = 'user1';
 const USER_ID_2 = 'user2';
 const NOTE_ID = 'noteId1';
 
-const exampleUser: UserRow = {
+const userSchema = {
+  id: String,
+  name: String,
+  age: Number,
+  isAdmin: Boolean,
+};
+
+const noteSchema = {
+  id: String,
+  text: String,
+  userId: String,
+};
+
+const exampleUser = {
   id: USER_ID_1,
   name: 'Jesse',
   age: 33,
   isAdmin: true,
 };
 
-type NoteRow = {
-  id: string;
-  text: string;
-  userId: string;
-};
-
-const exampleNote: NoteRow = {
+const exampleNote = {
   id: NOTE_ID,
   text: 'Hello world',
   userId: USER_ID_1,
 };
 
-const baseBuilder = new SchemaBuilder().defineTable('users', exampleUser);
+const baseBuilder = new SchemaBuilder().defineTable('users', userSchema);
 
 describe('tinybased', () => {
   it('should handle type safe rows and cells', async () => {
@@ -47,8 +47,8 @@ describe('tinybased', () => {
   describe('queries', () => {
     it('handles simple queries', async () => {
       const based = await new SchemaBuilder()
-        .defineTable('users', exampleUser)
-        .defineTable('notes', exampleNote)
+        .defineTable('users', userSchema)
+        .defineTable('notes', noteSchema)
         .build();
 
       const queryBuilder = based
@@ -98,8 +98,8 @@ describe('tinybased', () => {
 
     it('handles simple aggregate queries', async () => {
       const based = await new SchemaBuilder()
-        .defineTable('users', exampleUser)
-        .defineTable('notes', exampleNote)
+        .defineTable('users', userSchema)
+        .defineTable('notes', noteSchema)
         .build();
 
       const queryBuilder = based
@@ -158,8 +158,8 @@ describe('tinybased', () => {
   describe('relationships', () => {
     it('allows resolving ids from both sides of a defined relationship', async () => {
       const based = await new SchemaBuilder()
-        .defineTable('users', exampleUser)
-        .defineTable('notes', exampleNote)
+        .defineTable('users', userSchema)
+        .defineTable('notes', noteSchema)
         .defineRelationship('userNotes', 'notes', 'users', 'userId')
         .build();
 
@@ -180,7 +180,7 @@ describe('tinybased', () => {
   describe('hydration', () => {
     it('should hydrate upon creation using provided hydrators', async () => {
       const based = await baseBuilder
-        .defineTable('notes', exampleNote)
+        .defineTable('notes', noteSchema)
         .defineHydrators({
           users: () => Promise.resolve([exampleUser]),
           notes: () => Promise.resolve([exampleNote]),
