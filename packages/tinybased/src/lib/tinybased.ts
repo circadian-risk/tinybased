@@ -144,6 +144,13 @@ export class TinyBased<
     return this.store.setCell(table as string, rowId, cellId as string, value);
   }
 
+  deleteCell<
+    TTable extends keyof TBSchema,
+    TCell extends keyof TBSchema[TTable]
+  >(table: TTable, rowId: string, cellId: TCell) {
+    return this.store.delCell(table as string, rowId, cellId as string);
+  }
+
   getLocalIds(relationshipName: TRelationships, rowId: string) {
     return this.relationships.getLocalRowIds(relationshipName, rowId);
   }

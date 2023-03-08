@@ -1,9 +1,15 @@
-import { makeTinyBasedTestFixture, Schema } from '../fixture/database';
+import {
+  makeTinyBasedTestFixture,
+  Schema,
+  USER_ID_1,
+  USER_ID_2,
+} from '../fixture/database';
 import {
   makeTinybasedHooks,
   useSimpleQueryResultIds,
   useSimpleQueryResultTable,
   TinyBasedReactHooks,
+  useSimpleQuerySortedResultIds,
 } from './tinybased-react';
 
 import { renderHook, act } from '@testing-library/react-hooks';
@@ -48,6 +54,7 @@ describe('Tinybased React', () => {
       });
     });
   });
+
   describe('queries', () => {
     describe('simple queries', () => {
       it('handles result row ids', () => {
@@ -60,6 +67,38 @@ describe('Tinybased React', () => {
         const { result } = renderHook(() => useSimpleQueryResultIds(query));
         expect(result.current).toEqual(['noteId1', 'noteId2']);
       });
+
+      it('can sort query results', async () => {
+        const sortedBased = await makeTinyBasedTestFixture();
+        const query = sortedBased
+          .simpleQuery('users')
+          .select('name')
+          .select('age')
+          .build();
+
+        const { result: result1 } = renderHook(() =>
+          useSimpleQuerySortedResultIds(query, 'name')
+        );
+
+        expect(result1.current).toEqual([USER_ID_2, USER_ID_1]);
+
+        const { result: result2 } = renderHook(() =>
+          useSimpleQuerySortedResultIds(query, 'age')
+        );
+
+        expect(result2.current).toEqual([USER_ID_1, USER_ID_2]);
+
+        const USER_ID_3 = 'user3';
+        sortedBased.setRow('users', USER_ID_3, {
+          age: 100,
+          isAdmin: false,
+          name: 'Zach',
+          id: USER_ID_3,
+        });
+
+        expect(result2.current).toEqual([USER_ID_1, USER_ID_2, USER_ID_3]);
+      });
+
       it('handles result table', () => {
         const query = based
           .simpleQuery('notes')

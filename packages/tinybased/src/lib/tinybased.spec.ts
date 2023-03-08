@@ -41,6 +41,10 @@ describe('tinybased', () => {
     expect(based.getRow('users', '1')).toEqual(exampleUser);
     const age = based.getCell('users', '1', 'age');
     expect(age).toBe(33);
+
+    based.deleteCell('users', '1', 'age');
+    const age2 = based.getCell('users', '1', 'age');
+    expect(age2).toBeUndefined();
   });
 
   // TODO: extract common setup boilerplate
@@ -96,6 +100,53 @@ describe('tinybased', () => {
       });
     });
 
+    it('can sort query results', async () => {
+      const based = await new SchemaBuilder()
+        .defineTable('users', userSchema)
+        .defineHydrators({
+          users: () =>
+            Promise.resolve([
+              {
+                id: '1',
+                name: 'Adam',
+                age: 42,
+                isAdmin: false,
+              },
+              {
+                id: '3',
+                name: 'Matilda',
+                age: 10,
+                isAdmin: false,
+              },
+              {
+                id: '2',
+                name: 'Zeus',
+                age: 1000,
+                isAdmin: false,
+              },
+            ]),
+        })
+        .build();
+
+      const query = based
+        .simpleQuery('users')
+        .select('name')
+        .select('age')
+        .build();
+
+      const result1 = query.getSortedRowIds('age');
+      expect(result1).toEqual(['3', '1', '2']);
+
+      const result2 = query.getSortedRowIds('age', {
+        descending: true,
+        limit: 2,
+      });
+      expect(result2).toEqual(['2', '1']);
+
+      const result3 = query.getSortedRowIds('name');
+      expect(result3).toEqual(['1', '3', '2']);
+    });
+
     it('handles simple aggregate queries', async () => {
       const based = await new SchemaBuilder()
         .defineTable('users', userSchema)
@@ -107,7 +158,6 @@ describe('tinybased', () => {
         .where('userId', USER_ID_1)
         .select('userId');
 
-      // const query = queryBuilder.build();
       const aggQuery = queryBuilder.aggregate('userId', 'count');
 
       const NOTE_ID_2 = 'noteId2';
