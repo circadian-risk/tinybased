@@ -1,4 +1,5 @@
 import { SchemaBuilder } from './SchemaBuilder';
+import { TableSchema } from './types';
 
 type UserRow = {
   id: string;
@@ -188,6 +189,38 @@ describe('tinybased', () => {
 
       expect(based.getRow('users', USER_ID_1)).toEqual(exampleUser);
       expect(based.getRow('notes', NOTE_ID)).toEqual(exampleNote);
+    });
+  });
+
+  describe('persistence', () => {
+    it('allows simple handling of row add/update for any table', async () => {
+      const mockStorage = new Map<string, TableSchema | undefined>();
+      const based = await baseBuilder
+        .onRowAddedOrUpdated(async (_tableName, rowId, entity) => {
+          mockStorage.set(rowId, entity);
+        })
+        .onRowRemoved(async (_tableName, rowId) => {
+          mockStorage.delete(rowId);
+        })
+        .build();
+
+      const ID = '42';
+      const wait = () => new Promise((resolve) => setTimeout(resolve, 10));
+
+      based.setRow('users', ID, exampleUser);
+
+      await wait();
+
+      expect(mockStorage.get(ID)).toEqual(exampleUser);
+
+      based.setCell('users', ID, 'age', 35);
+
+      await wait();
+      expect(mockStorage.get(ID)?.['age']).toEqual(35);
+
+      based.deleteRow('users', ID);
+      await wait();
+      expect(mockStorage.get(ID)).toBeUndefined();
     });
   });
 });

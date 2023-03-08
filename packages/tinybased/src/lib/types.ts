@@ -13,3 +13,9 @@ export type RelationshipDefinition = {
   to: string;
   cell: string;
 };
+
+export type RowChangeHandler<TSchema extends TinyBaseSchema> = (
+  tableName: keyof TSchema,
+  rowId: string,
+  entity?: TableSchema
+) => Promise<void>;

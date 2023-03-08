@@ -2,6 +2,7 @@
 import { TinyBased } from './tinybased';
 import {
   RelationshipDefinition,
+  RowChangeHandler,
   SchemaHydrators,
   TableSchema,
   TinyBaseSchema,
@@ -14,6 +15,8 @@ export class SchemaBuilder<
   private readonly tables: Set<string> = new Set();
   private readonly relationshipDefinitions: RelationshipDefinition[] = [];
   private hydrators: SchemaHydrators<TSchema> = {} as SchemaHydrators<TSchema>;
+  private rowRemovedHandler?: RowChangeHandler<TSchema>;
+  private rowAddedOrUpdatedHandler?: RowChangeHandler<TSchema>;
 
   public defineRelationship<
     TRelationshipName extends string,
@@ -66,11 +69,29 @@ export class SchemaBuilder<
     const tb = new TinyBased(
       this.tables,
       this.relationshipDefinitions,
-      this.hydrators
+      this.hydrators,
+      {
+        rowAddedOrUpdatedHandler: this.rowAddedOrUpdatedHandler,
+        rowRemovedHandler: this.rowRemovedHandler,
+      }
     );
+
     if (Object.keys(this.hydrators).length) {
       await tb.hydrate();
     }
+
+    tb.init();
+
     return tb as TinyBased<TSchema, TRelationships>;
+  }
+
+  public onRowAddedOrUpdated(handler: RowChangeHandler<TSchema>) {
+    this.rowAddedOrUpdatedHandler = handler;
+    return this;
+  }
+
+  public onRowRemoved(handler: RowChangeHandler<TSchema>) {
+    this.rowRemovedHandler = handler;
+    return this;
   }
 }
