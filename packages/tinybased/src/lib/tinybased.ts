@@ -119,6 +119,31 @@ export class TinyBased<
     return this.store.getRow(table as string, rowId) as TBSchema[TTable];
   }
 
+  hasRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
+    return this.store.hasRow(table as string, rowId);
+  }
+
+  getSortedRowIds<
+    TTable extends keyof TBSchema,
+    TCell extends keyof TBSchema[TTable]
+  >(
+    table: TTable,
+    cellId: TCell,
+    options?: {
+      descending?: boolean;
+      offset?: number;
+      limit?: number;
+    }
+  ) {
+    return this.store.getSortedRowIds(
+      table as string,
+      cellId as string,
+      options?.descending,
+      options?.offset,
+      options?.limit
+    );
+  }
+
   deleteRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
     return this.store.delRow(table as string, rowId);
   }

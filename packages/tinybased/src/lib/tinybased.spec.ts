@@ -47,6 +47,59 @@ describe('tinybased', () => {
     expect(age2).toBeUndefined();
   });
 
+  it('getSortedRowIds: should return sorted id by cell', async () => {
+    const based = await baseBuilder.build();
+    based.setRow('users', '2', {
+      id: '2',
+      name: 'Adam',
+      age: 42,
+      isAdmin: false,
+    });
+
+    based.setRow('users', '1', {
+      id: '1',
+      name: 'Bob',
+      age: 33,
+      isAdmin: true,
+    });
+
+    expect(based.getSortedRowIds('users', 'name')).toEqual(['2', '1']);
+    expect(based.getSortedRowIds('users', 'age')).toEqual(['1', '2']);
+    expect(
+      based.getSortedRowIds('users', 'name', { descending: true })
+    ).toEqual(['1', '2']);
+    expect(based.getSortedRowIds('users', 'name', { limit: 1 })).toEqual(['2']);
+    expect(based.getSortedRowIds('users', 'name', { offset: 1 })).toEqual([
+      '1',
+    ]);
+
+    expectTypeOf(based.getSortedRowIds('users', 'name')).toEqualTypeOf<
+      string[]
+    >();
+    expectTypeOf(based.getSortedRowIds).parameter(0).toEqualTypeOf<'users'>();
+    expectTypeOf(based.getSortedRowIds)
+      .parameter(1)
+      .toEqualTypeOf<'name' | 'id' | 'age' | 'isAdmin'>();
+  });
+
+  it('hasRow: should return boolean if row exists or not by id', async () => {
+    const based = await baseBuilder.build();
+
+    based.setRow('users', '1', {
+      id: '1',
+      name: 'Adam',
+      age: 25,
+      isAdmin: true,
+    });
+
+    expect(based.hasRow('users', '1')).toEqual(true);
+    expect(based.hasRow('users', '2')).toEqual(false);
+
+    expectTypeOf(based.hasRow('users', '1')).toEqualTypeOf<boolean>();
+    expectTypeOf(based.hasRow).parameter(0).toEqualTypeOf<'users'>();
+    expectTypeOf(based.hasRow).parameter(1).toEqualTypeOf<string>();
+  });
+
   // TODO: extract common setup boilerplate
   describe('queries', () => {
     it('handles simple queries', async () => {
