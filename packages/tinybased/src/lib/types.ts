@@ -7,6 +7,13 @@ export type SchemaHydrators<TBSchema extends TinyBaseSchema> = {
 };
 
 export type Aggregations = 'avg' | 'count' | 'sum' | 'max' | 'min';
+
+export type QueryOptions = {
+  descending?: boolean;
+  offset?: number;
+  limit?: number;
+};
+
 export type RelationshipDefinition = {
   name: string;
   from: string;

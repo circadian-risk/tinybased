@@ -1,5 +1,5 @@
 import { Queries } from 'tinybase/queries';
-import { Table } from '../types';
+import { QueryOptions, Table } from '../types';
 
 export class SimpleQuery<
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -13,6 +13,17 @@ export class SimpleQuery<
 
   public getResultRowIds() {
     return this.queries.getResultRowIds(this.queryId);
+  }
+
+  public getSortedRowIds(sortBy: TCells, options?: QueryOptions) {
+    const { descending = false, offset, limit } = options || {};
+    return this.queries.getResultSortedRowIds(
+      this.queryId,
+      sortBy as string,
+      descending,
+      offset,
+      limit
+    );
   }
 
   public getResultTable(): Record<string, Pick<TTable, TCells>> {

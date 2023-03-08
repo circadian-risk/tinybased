@@ -16,11 +16,11 @@ const noteSchema = {
 type UserRow = ParseTableSchema<typeof userSchema>;
 type NoteRow = ParseTableSchema<typeof noteSchema>;
 
-const USER_ID_1 = 'user1';
-const USER_ID_2 = 'user2';
-const NOTE_ID = 'noteId1';
-const NOTE_ID_2 = 'noteId2';
-const NOTE_ID_3 = 'noteId3';
+export const USER_ID_1 = 'user1';
+export const USER_ID_2 = 'user2';
+export const NOTE_ID = 'noteId1';
+export const NOTE_ID_2 = 'noteId2';
+export const NOTE_ID_3 = 'noteId3';
 
 const user1: UserRow = {
   id: USER_ID_1,
@@ -32,6 +32,7 @@ const user1: UserRow = {
 const user2: UserRow = {
   ...user1,
   id: USER_ID_2,
+  age: 44,
   name: 'Bob',
 };
 

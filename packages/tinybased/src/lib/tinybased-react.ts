@@ -4,10 +4,11 @@ import {
   useResultRowIds,
   useRow as tbUseRow,
   useCell as tbUseCell,
+  useResultSortedRowIds,
 } from 'tinybase/ui-react';
 import { SimpleQuery } from './queries';
 import { TinyBased } from './tinybased';
-import { Table, TinyBaseSchema } from './types';
+import { QueryOptions, Table, TinyBaseSchema } from './types';
 
 export const useSimpleQueryResultTable = <
   TTable extends Table = {},
@@ -23,6 +24,21 @@ export const useSimpleQueryResultTable = <
 
 export function useSimpleQueryResultIds(query: SimpleQuery) {
   return useResultRowIds(query.queryId, query.queries);
+}
+
+export function useSimpleQuerySortedResultIds<
+  TTable extends Table = {},
+  TCells extends keyof TTable = never
+>(query: SimpleQuery<TTable, TCells>, sortBy: TCells, options?: QueryOptions) {
+  const { descending = false, offset, limit } = options || {};
+  return useResultSortedRowIds(
+    query.queryId,
+    sortBy as string,
+    descending,
+    offset,
+    limit,
+    query.queries
+  );
 }
 
 export type TinyBasedReactHooks<TBSchema extends TinyBaseSchema = {}> = {
