@@ -21,14 +21,14 @@ import keyBy from 'lodash/keyBy';
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
 
-export type TinyBasedOptions<TSchema extends TinyBaseSchema = {}> = {
-  rowAddedOrUpdatedHandler?: RowChangeHandler<TSchema>;
-  rowRemovedHandler?: RowChangeHandler<TSchema>;
+export type TinyBasedOptions<TBSchema extends TinyBaseSchema = {}> = {
+  rowAddedOrUpdatedHandler?: RowChangeHandler<TBSchema>;
+  rowRemovedHandler?: RowChangeHandler<TBSchema>;
 };
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 export class TinyBased<
-  TSchema extends TinyBaseSchema = {},
+  TBSchema extends TinyBaseSchema = {},
   TRelationships extends string = never
 > {
   public readonly store: Store;
@@ -42,8 +42,8 @@ export class TinyBased<
   constructor(
     tableNames: Set<string>,
     relationshipDefs: RelationshipDefinition[] = [],
-    private readonly hydrators: SchemaHydrators<TSchema> = {} as SchemaHydrators<TSchema>,
-    private readonly options: TinyBasedOptions<TSchema> = {}
+    private readonly hydrators: SchemaHydrators<TBSchema> = {} as SchemaHydrators<TBSchema>,
+    private readonly options: TinyBasedOptions<TBSchema> = {}
   ) {
     this.store = createStore();
     this.metrics = createMetrics(this.store);
@@ -97,49 +97,49 @@ export class TinyBased<
     );
   }
 
-  simpleQuery<TTable extends keyof TSchema>(
+  simpleQuery<TTable extends keyof TBSchema>(
     table: TTable
-  ): SimpleQueryBuilder<TSchema[TTable]> {
+  ): SimpleQueryBuilder<TBSchema[TTable]> {
     return new SimpleQueryBuilder(table as string, this.queries);
   }
 
-  getRowCount<TTable extends keyof TSchema>(table: TTable) {
+  getRowCount<TTable extends keyof TBSchema>(table: TTable) {
     return this.metrics.getMetric(makeTableRowCountMetricName(table as string));
   }
 
-  setRow<TTable extends keyof TSchema>(
+  setRow<TTable extends keyof TBSchema>(
     table: TTable,
     rowId: string,
-    row: TSchema[TTable]
+    row: TBSchema[TTable]
   ) {
     this.store.setRow(table as string, rowId, row);
   }
 
-  getRow<TTable extends keyof TSchema>(table: TTable, rowId: string) {
+  getRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
     return this.store.getRow(table as string, rowId);
   }
 
-  deleteRow<TTable extends keyof TSchema>(table: TTable, rowId: string) {
+  deleteRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
     return this.store.delRow(table as string, rowId);
   }
 
-  getCell<TTable extends keyof TSchema, TCell extends keyof TSchema[TTable]>(
+  getCell<TTable extends keyof TBSchema, TCell extends keyof TBSchema[TTable]>(
     table: TTable,
     rowId: string,
     cellId: TCell
-  ): TSchema[TTable][TCell] {
+  ): TBSchema[TTable][TCell] {
     return this.store.getCell(
       table as string,
       rowId,
       cellId as string
-    ) as TSchema[TTable][TCell];
+    ) as TBSchema[TTable][TCell];
   }
 
-  setCell<TTable extends keyof TSchema, TCell extends keyof TSchema[TTable]>(
+  setCell<TTable extends keyof TBSchema, TCell extends keyof TBSchema[TTable]>(
     table: TTable,
     rowId: string,
     cellId: TCell,
-    value: TSchema[TTable][TCell]
+    value: TBSchema[TTable][TCell]
   ) {
     return this.store.setCell(table as string, rowId, cellId as string, value);
   }

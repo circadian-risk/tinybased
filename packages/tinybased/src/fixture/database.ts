@@ -1,4 +1,4 @@
-import { ParseSchema, SchemaBuilder } from '../';
+import { ParseTableSchema, SchemaBuilder } from '../';
 
 const userSchema = {
   id: String,
@@ -13,8 +13,8 @@ const noteSchema = {
   userId: String,
 };
 
-type UserRow = ParseSchema<typeof userSchema>;
-type NoteRow = ParseSchema<typeof noteSchema>;
+type UserRow = ParseTableSchema<typeof userSchema>;
+type NoteRow = ParseTableSchema<typeof noteSchema>;
 
 const USER_ID_1 = 'user1';
 const USER_ID_2 = 'user2';

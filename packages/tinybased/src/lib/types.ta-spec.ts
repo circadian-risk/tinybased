@@ -1,5 +1,5 @@
 import * as ta from 'type-assertions';
-import { ParseSchema } from './types';
+import { ParseTableSchema } from './types';
 
 const ExampleSchema = {
   id: String,
@@ -17,4 +17,6 @@ type expectedSchemaType = {
   nickname?: string;
 };
 
-ta.assert<ta.Equal<ParseSchema<typeof ExampleSchema>, expectedSchemaType>>();
+ta.assert<
+  ta.Equal<ParseTableSchema<typeof ExampleSchema>, expectedSchemaType>
+>();

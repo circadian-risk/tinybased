@@ -1,5 +1,5 @@
 import { SchemaBuilder } from './SchemaBuilder';
-import { TableSchema } from './types';
+import { Table } from './types';
 
 const USER_ID_1 = 'user1';
 const USER_ID_2 = 'user2';
@@ -194,7 +194,7 @@ describe('tinybased', () => {
 
   describe('persistence', () => {
     it('allows simple handling of row add/update for any table', async () => {
-      const mockStorage = new Map<string, TableSchema | undefined>();
+      const mockStorage = new Map<string, Table | undefined>();
       const based = await baseBuilder
         .onRowAddedOrUpdated(async (_tableName, rowId, entity) => {
           mockStorage.set(rowId, entity);

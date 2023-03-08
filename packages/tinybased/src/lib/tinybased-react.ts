@@ -7,10 +7,10 @@ import {
 } from 'tinybase/ui-react';
 import { SimpleQuery } from './queries';
 import { TinyBased } from './tinybased';
-import { TableSchema, TinyBaseSchema } from './types';
+import { Table, TinyBaseSchema } from './types';
 
 export const useSimpleQueryResultTable = <
-  TTable extends TableSchema = {},
+  TTable extends Table = {},
   TCells extends keyof TTable = never
 >(
   query: SimpleQuery<TTable, TCells>
@@ -25,28 +25,33 @@ export function useSimpleQueryResultIds(query: SimpleQuery) {
   return useResultRowIds(query.queryId, query.queries);
 }
 
-export type TinyBasedReactHooks<TSchema extends TinyBaseSchema = {}> = {
-  useCell: <TTable extends keyof TSchema, TCell extends keyof TSchema[TTable]>(
+export type TinyBasedReactHooks<TBSchema extends TinyBaseSchema = {}> = {
+  useCell: <
+    TTable extends keyof TBSchema,
+    TCell extends keyof TBSchema[TTable]
+  >(
     table: TTable,
     rowId: string,
     cellId: TCell
-  ) => TSchema[TTable][TCell];
+  ) => TBSchema[TTable][TCell];
 
-  useRow: <TTable extends keyof TSchema>(
+  useRow: <TTable extends keyof TBSchema>(
     table: TTable,
     rowId: string
-  ) => TSchema[TTable];
+  ) => TBSchema[TTable];
 };
 
 export function makeTinybasedHooks<
-  TSchema extends TinyBaseSchema = {},
+  TBSchema extends TinyBaseSchema = {},
   TRelationships extends string = never
->(tinyBased: TinyBased<TSchema, TRelationships>): TinyBasedReactHooks<TSchema> {
+>(
+  tinyBased: TinyBased<TBSchema, TRelationships>
+): TinyBasedReactHooks<TBSchema> {
   const store = tinyBased.store;
 
   const useCell = <
-    TTable extends keyof TSchema,
-    TCell extends keyof TSchema[TTable]
+    TTable extends keyof TBSchema,
+    TCell extends keyof TBSchema[TTable]
   >(
     table: TTable,
     rowId: string,
@@ -57,14 +62,14 @@ export function makeTinybasedHooks<
       rowId,
       cellId as string,
       store
-    ) as TSchema[TTable][TCell];
+    ) as TBSchema[TTable][TCell];
   };
 
-  const useRow = <TTable extends keyof TSchema>(
+  const useRow = <TTable extends keyof TBSchema>(
     table: TTable,
     rowId: string
   ) => {
-    return tbUseRow(table as string, rowId, store) as TSchema[TTable];
+    return tbUseRow(table as string, rowId, store) as TBSchema[TTable];
   };
 
   return {

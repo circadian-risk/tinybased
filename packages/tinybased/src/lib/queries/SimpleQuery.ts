@@ -1,9 +1,9 @@
 import { Queries } from 'tinybase/queries';
-import { TableSchema } from '../types';
+import { Table } from '../types';
 
 export class SimpleQuery<
   // eslint-disable-next-line @typescript-eslint/ban-types
-  TTable extends TableSchema = {},
+  TTable extends Table = {},
   TCells extends keyof TTable = never
 > {
   constructor(
