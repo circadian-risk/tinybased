@@ -119,6 +119,10 @@ export class TinyBased<
     return this.store.getRow(table as string, rowId) as TBSchema[TTable];
   }
 
+  hasRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
+    return this.store.hasRow(table as string, rowId);
+  }
+
   getSortedRowIds<
     TTable extends keyof TBSchema,
     TCell extends keyof TBSchema[TTable]

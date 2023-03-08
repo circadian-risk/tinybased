@@ -45,7 +45,7 @@ importers:
       '@nrwl/eslint-plugin-nx': 15.8.5_s6eozg7tx22qnpfh43bfcdlkbm
       '@nrwl/js': 15.8.5_ytouamjlyocji2qpm45obukxku
       '@nrwl/linter': 15.8.5_ytouamjlyocji2qpm45obukxku
-      '@nrwl/rollup': 15.8.5_ytouamjlyocji2qpm45obukxku
+      '@nrwl/rollup': 15.8.5_saa5zcqrskie2tnybpmdpg7mni
       '@nrwl/vite': 15.8.5_hjbll23mfrog5dz2o2dx3obzea
       '@swc/cli': 0.1.62_@swc+core@1.3.37
       '@swc/core': 1.3.37
@@ -66,18 +66,10 @@ importers:
       tslib: 2.5.0
       typescript: 4.9.5
       vite: 4.1.4_@types+node@18.7.1
-      vite-plugin-dts: 1.7.3_aplgegtx56wrrutahhadif44j4
+      vite-plugin-dts: 1.7.3_zxoajafahzxvypdcxckpgidfau
       vite-plugin-eslint: 1.8.1_eslint@8.15.0+vite@4.1.4
       vite-tsconfig-paths: 4.0.5_typescript@4.9.5
       vitest: 0.25.8_eetf2xjpdhuqcs2dx4ndfgw7iq
-
-  packages/tinybased:
-    specifiers:
-      prettier: ^2.8.4
-      tslib: ^2.5.0
-    devDependencies:
-      prettier: 2.8.4
-      tslib: 2.5.0
 
 packages:
 
@@ -2116,10 +2108,9 @@ packages:
     dev: true
     optional: true
 
-  /@nrwl/rollup/15.8.5_ytouamjlyocji2qpm45obukxku:
+  /@nrwl/rollup/15.8.5_saa5zcqrskie2tnybpmdpg7mni:
     resolution: {integrity: sha512-eDcRorjCFwyFTzVil2RptoOa1peo3m/+LAA1BL8U7awWTdDrmtpQ5pcPBu8IQO9ZYOk4kaUQP63lIptg1cqX+g==}
     dependencies:
-      '@babel/core': 7.21.0
       '@nrwl/devkit': 15.8.5_nx@15.8.5+typescript@4.9.5
       '@nrwl/js': 15.8.5_ytouamjlyocji2qpm45obukxku
       '@nrwl/workspace': 15.8.5_f6xzbckiooyv5ozjxpxe2dw4pu
@@ -2141,6 +2132,7 @@ packages:
       rxjs: 6.6.7
       tslib: 2.5.0
     transitivePeerDependencies:
+      - '@babel/core'
       - '@swc-node/register'
       - '@swc/core'
       - '@types/babel__core'
@@ -2340,7 +2332,7 @@ packages:
       picomatch: 2.3.1
     dev: true
 
-  /@rollup/pluginutils/5.0.2:
+  /@rollup/pluginutils/5.0.2_rollup@2.79.1:
     resolution: {integrity: sha512-pTd9rIsP92h+B6wWwFbW8RkZv4hiR/xKsqre4SIuAOaOEQRxi0lqLke9k2/7WegC85GgUs9pjmOjCUi3In4vwA==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
@@ -2352,6 +2344,7 @@ packages:
       '@types/estree': 1.0.0
       estree-walker: 2.0.2
       picomatch: 2.3.1
+      rollup: 2.79.1
     dev: true
 
   /@rushstack/node-core-library/3.55.2_@types+node@18.7.1:
@@ -7365,14 +7358,14 @@ packages:
     engines: {node: '>= 0.10'}
     dev: true
 
-  /vite-plugin-dts/1.7.3_aplgegtx56wrrutahhadif44j4:
+  /vite-plugin-dts/1.7.3_zxoajafahzxvypdcxckpgidfau:
     resolution: {integrity: sha512-u3t45p6fTbzUPMkwYe0ESwuUeiRMlwdPfD3dRyDKUwLe2WmEYcFyVp2o9/ke2EMrM51lQcmNWdV9eLcgjD1/ng==}
     engines: {node: ^14.18.0 || >=16.0.0}
     peerDependencies:
       vite: '>=2.9.0'
     dependencies:
       '@microsoft/api-extractor': 7.34.4_@types+node@18.7.1
-      '@rollup/pluginutils': 5.0.2
+      '@rollup/pluginutils': 5.0.2_rollup@2.79.1
       '@rushstack/node-core-library': 3.55.2_@types+node@18.7.1
       debug: 4.3.4
       fast-glob: 3.2.12

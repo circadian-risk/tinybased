@@ -47,7 +47,7 @@ describe('tinybased', () => {
     expect(age2).toBeUndefined();
   });
 
-  it('should return sorted id by cell', async () => {
+  it('getSortedRowIds: should return sorted id by cell', async () => {
     const based = await baseBuilder.build();
     based.setRow('users', '2', {
       id: '2',
@@ -80,6 +80,24 @@ describe('tinybased', () => {
     expectTypeOf(based.getSortedRowIds)
       .parameter(1)
       .toEqualTypeOf<'name' | 'id' | 'age' | 'isAdmin'>();
+  });
+
+  it('hasRow: should return boolean if row exists or not by id', async () => {
+    const based = await baseBuilder.build();
+
+    based.setRow('users', '1', {
+      id: '1',
+      name: 'Adam',
+      age: 25,
+      isAdmin: true,
+    });
+
+    expect(based.hasRow('users', '1')).toEqual(true);
+    expect(based.hasRow('users', '2')).toEqual(false);
+
+    expectTypeOf(based.hasRow('users', '1')).toEqualTypeOf<boolean>();
+    expectTypeOf(based.hasRow).parameter(0).toEqualTypeOf<'users'>();
+    expectTypeOf(based.hasRow).parameter(1).toEqualTypeOf<string>();
   });
 
   // TODO: extract common setup boilerplate
