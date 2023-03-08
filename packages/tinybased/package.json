@@ -3,10 +3,12 @@
   "version": "0.0.1",
   "type": "commonjs",
   "devDependencies": {
+    "@types/react": "^18.0.28",
     "prettier": "^2.8.4",
     "tslib": "^2.5.0"
   },
   "peerDependencies": {
-    "tinybase": "^3.0.3"
+    "tinybase": "^3.0.3",
+    "@lyrasearch/lyra": "^0.4.11"
   }
 }
