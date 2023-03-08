@@ -1,4 +1,4 @@
-import { Queries } from 'tinybase/queries';
+import { Queries } from 'tinybase/cjs/queries';
 import { Aggregations, Cell, Table } from '../types';
 import { SimpleAggregateQuery } from './SimpleAggregateQuery';
 import { SimpleQuery } from './SimpleQuery';

@@ -1,4 +1,4 @@
-import { Queries } from 'tinybase/queries';
+import { Queries } from 'tinybase/cjs/queries';
 import { QueryOptions, Table } from '../types';
 
 export class SimpleQuery<

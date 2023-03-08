@@ -8,7 +8,7 @@ import {
   createMetrics,
   createRelationships,
   createQueries,
-} from 'tinybase';
+} from 'tinybase/cjs';
 import { SimpleQueryBuilder } from './queries';
 import {
   RelationshipDefinition,

@@ -1,4 +1,4 @@
-import { Queries } from 'tinybase/queries';
+import { Queries } from 'tinybase/cjs/queries';
 import { Aggregations } from '../types';
 
 export class SimpleAggregateQuery<TAggregation extends Aggregations> {
