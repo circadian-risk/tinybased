@@ -5,7 +5,7 @@ import {
   useRow as tbUseRow,
   useCell as tbUseCell,
   useResultSortedRowIds,
-} from 'tinybase/ui-react';
+} from 'tinybase/cjs/ui-react';
 import { SimpleQuery } from './queries';
 import { TinyBased } from './tinybased';
 import { QueryOptions, Table, TinyBaseSchema } from './types';
