@@ -1,11 +1,11 @@
 import { Queries } from 'tinybase/queries';
-import { Aggregations, Cell, TableSchema } from '../types';
+import { Aggregations, Cell, Table } from '../types';
 import { SimpleAggregateQuery } from './SimpleAggregateQuery';
 import { SimpleQuery } from './SimpleQuery';
 
 export class SimpleQueryBuilder<
   // eslint-disable-next-line @typescript-eslint/ban-types
-  TTable extends TableSchema = {},
+  TTable extends Table = {},
   TCells extends keyof TTable = never
 > {
   // TODO maybe we should model this as a Map/Record so that conditions for a given cell

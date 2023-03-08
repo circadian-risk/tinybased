@@ -1,34 +1,36 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { TinyBased } from './tinybased';
 import {
+  ParseTableSchema,
   RelationshipDefinition,
   RowChangeHandler,
-  SchemaHydrators,
   TableSchema,
+  SchemaHydrators,
   TinyBaseSchema,
 } from './types';
 
 export class SchemaBuilder<
-  TSchema extends TinyBaseSchema = {},
+  TBSchema extends TinyBaseSchema = {},
   TRelationships extends string = never
 > {
   private readonly tables: Set<string> = new Set();
   private readonly relationshipDefinitions: RelationshipDefinition[] = [];
-  private hydrators: SchemaHydrators<TSchema> = {} as SchemaHydrators<TSchema>;
-  private rowRemovedHandler?: RowChangeHandler<TSchema>;
-  private rowAddedOrUpdatedHandler?: RowChangeHandler<TSchema>;
+  private hydrators: SchemaHydrators<TBSchema> =
+    {} as SchemaHydrators<TBSchema>;
+  private rowRemovedHandler?: RowChangeHandler<TBSchema>;
+  private rowAddedOrUpdatedHandler?: RowChangeHandler<TBSchema>;
 
   public defineRelationship<
     TRelationshipName extends string,
-    TTableFrom extends keyof TSchema,
-    TTableTo extends keyof TSchema,
-    TCellFrom extends keyof TSchema[TTableFrom]
+    TTableFrom extends keyof TBSchema,
+    TTableTo extends keyof TBSchema,
+    TCellFrom extends keyof TBSchema[TTableFrom]
   >(
     name: TRelationshipName,
     tableFrom: TTableFrom,
     tableTo: TTableTo,
     cellFrom: TCellFrom
-  ): SchemaBuilder<TSchema, TRelationships | TRelationshipName> {
+  ): SchemaBuilder<TBSchema, TRelationships | TRelationshipName> {
     this.relationshipDefinitions.push({
       name,
       from: tableFrom as string,
@@ -37,18 +39,19 @@ export class SchemaBuilder<
     });
 
     return this as unknown as SchemaBuilder<
-      TSchema,
+      TBSchema,
       TRelationships | TRelationshipName
     >;
   }
 
   public defineTable<
     TTableName extends string,
-    TTableSchema extends TableSchema
+    TSchema extends TableSchema,
+    TTable = ParseTableSchema<TSchema>
   >(
     tableName: TTableName,
-    exampleRow: TTableSchema
-  ): SchemaBuilder<TSchema & Record<TTableName, TTableSchema>, TRelationships> {
+    _tableSchema: TSchema
+  ): SchemaBuilder<TBSchema & Record<TTableName, TTable>, TRelationships> {
     if (this.tables.has(tableName)) {
       throw new Error(`Table ${tableName} already defined`);
     }
@@ -56,16 +59,16 @@ export class SchemaBuilder<
     this.tables.add(tableName);
 
     return this as unknown as SchemaBuilder<
-      TSchema & Record<TTableName, TTableSchema>
+      TBSchema & Record<TTableName, TTable>
     >;
   }
 
-  public defineHydrators(hydrators: SchemaHydrators<TSchema>) {
+  public defineHydrators(hydrators: SchemaHydrators<TBSchema>) {
     this.hydrators = hydrators;
     return this;
   }
 
-  public async build(): Promise<TinyBased<TSchema, TRelationships>> {
+  public async build(): Promise<TinyBased<TBSchema, TRelationships>> {
     const tb = new TinyBased(
       this.tables,
       this.relationshipDefinitions,
@@ -82,15 +85,15 @@ export class SchemaBuilder<
 
     tb.init();
 
-    return tb as TinyBased<TSchema, TRelationships>;
+    return tb as TinyBased<TBSchema, TRelationships>;
   }
 
-  public onRowAddedOrUpdated(handler: RowChangeHandler<TSchema>) {
+  public onRowAddedOrUpdated(handler: RowChangeHandler<TBSchema>) {
     this.rowAddedOrUpdatedHandler = handler;
     return this;
   }
 
-  public onRowRemoved(handler: RowChangeHandler<TSchema>) {
+  public onRowRemoved(handler: RowChangeHandler<TBSchema>) {
     this.rowRemovedHandler = handler;
     return this;
   }

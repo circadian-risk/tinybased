@@ -71,6 +71,14 @@ importers:
       vite-tsconfig-paths: 4.0.5_typescript@4.9.5
       vitest: 0.25.8_eetf2xjpdhuqcs2dx4ndfgw7iq
 
+  packages/tinybased:
+    specifiers:
+      prettier: ^2.8.4
+      tslib: ^2.5.0
+    devDependencies:
+      prettier: 2.8.4
+      tslib: 2.5.0
+
 packages:
 
   /@ampproject/remapping/2.2.0:
