@@ -7,6 +7,7 @@ import {
   TableSchema,
   SchemaHydrators,
   TinyBaseSchema,
+  SchemaPersister,
 } from './types';
 
 export class SchemaBuilder<
@@ -65,6 +66,11 @@ export class SchemaBuilder<
 
   public defineHydrators(hydrators: SchemaHydrators<TBSchema>) {
     this.hydrators = hydrators;
+    return this;
+  }
+
+  public persister(persister: SchemaPersister) {
+    this.hydrators;
     return this;
   }
 

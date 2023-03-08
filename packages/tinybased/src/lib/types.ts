@@ -6,6 +6,26 @@ export type SchemaHydrators<TBSchema extends TinyBaseSchema> = {
   [TTableName in keyof TBSchema]: () => Promise<TBSchema[TTableName][]>;
 };
 
+export type SchemaPersister<TBSchema extends TinyBaseSchema = TinyBaseSchema> =
+  () => {
+    getTableData: <TTableName extends keyof TBSchema>(
+      tableName: TTableName
+    ) => Promise<TBSchema[TTableName][]>;
+    setTableData: <TTableName extends keyof TBSchema>(
+      tableName: TTableName,
+      data: TBSchema[TTableName][]
+    ) => Promise<void>;
+    addTableRow: <TTableName extends keyof TBSchema>(
+      tableName: TTableName,
+      row: TBSchema[TTableName]
+    ) => Promise<void>;
+    setTableRow: <TTableName extends keyof TBSchema>(
+      tableName: TTableName,
+      rowId: string,
+      row: TBSchema[TTableName]
+    ) => Promise<void>;
+  };
+
 export type Aggregations = 'avg' | 'count' | 'sum' | 'max' | 'min';
 
 export type QueryOptions = {
