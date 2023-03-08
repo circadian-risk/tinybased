@@ -66,24 +66,3 @@ export async function makeTinyBasedTestFixture() {
 
   return tinyBasedSample;
 }
-
-// tinyBasedSample.setRow('users', USER_ID_1, exampleUser);
-// tinyBasedSample.setRow('notes', NOTE_ID, exampleNote);
-// tinyBasedSample.setRow('notes', NOTE_ID_2, {
-//   ...exampleNote,
-//   id: NOTE_ID_2,
-//   text: 'TinyBased',
-// });
-
-// tinyBasedSample.setRow('users', USER_ID_2, {
-//   ...exampleUser,
-//   id: USER_ID_2,
-//   name: 'Bob',
-// });
-
-// tinyBasedSample.setRow('notes', 'noteId3', {
-//   ...exampleNote,
-//   id: 'noteId3',
-//   userId: USER_ID_2,
-//   text: 'Hello Bob',
-// });

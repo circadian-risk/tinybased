@@ -84,7 +84,6 @@ export class TinyBased<
           this.options.rowRemovedHandler?.(table, rowId);
         }
       });
-      // this.store.onRowAddOrUpdate(this.options.rowAddOrUpdateHandler);
     }
   }
 
