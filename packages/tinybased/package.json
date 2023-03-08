@@ -4,8 +4,7 @@
   "type": "commonjs",
   "devDependencies": {
     "prettier": "^2.8.4",
-    "tslib": "^2.5.0",
-    "type-assertions": "^1.1.0"
+    "tslib": "^2.5.0"
   },
   "peerDependencies": {
     "tinybase": "^3.0.3"

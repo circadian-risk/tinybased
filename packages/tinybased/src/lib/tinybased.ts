@@ -116,7 +116,7 @@ export class TinyBased<
   }
 
   getRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
-    return this.store.getRow(table as string, rowId);
+    return this.store.getRow(table as string, rowId) as TBSchema[TTable];
   }
 
   deleteRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {

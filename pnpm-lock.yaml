@@ -75,11 +75,9 @@ importers:
     specifiers:
       prettier: ^2.8.4
       tslib: ^2.5.0
-      type-assertions: ^1.1.0
     devDependencies:
       prettier: 2.8.4
       tslib: 2.5.0
-      type-assertions: 1.1.0
 
 packages:
 
@@ -7206,10 +7204,6 @@ packages:
       strip-ansi: 6.0.1
       wcwidth: 1.0.1
       yargs: 17.7.1
-    dev: true
-
-  /type-assertions/1.1.0:
-    resolution: {integrity: sha512-LJ5h6n63vxS8fSdfTPqIc6IrbCo9X3g6Se+wSikCGsqaAI3ajN0iputclNG07wdWfBoQZIrpASjBQo5BeVNrAg==}
     dev: true
 
   /type-check/0.3.2:

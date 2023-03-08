@@ -25,8 +25,7 @@ type SchemaCellType =
   | NumberConstructor
   | BooleanConstructor
   | null
-  | undefined
-  | SchemaCellType[];
+  | undefined;
 
 export type TableSchema = Record<string, SchemaCellType>;
 
@@ -40,8 +39,6 @@ type ParseSchemaCellType<T extends SchemaCellType> = T extends StringConstructor
   ? null
   : T extends undefined
   ? undefined
-  : T extends SchemaCellType[]
-  ? ParseSchemaCellType<T[number]>
   : never;
 
 export type ParseTableSchema<TSchema extends TableSchema> =
