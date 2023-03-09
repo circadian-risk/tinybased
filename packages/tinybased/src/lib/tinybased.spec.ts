@@ -1,6 +1,6 @@
 import { SchemaBuilder } from './SchemaBuilder';
 import { notesTable, usersTable } from '../fixture/database';
-import { Table } from './types';
+import { InferSchema, SchemaPersister, Table } from './types';
 import { TableBuilder } from './TableBuilder';
 
 const USER_ID_1 = 'user1';
@@ -349,6 +349,103 @@ describe('tinybased', () => {
       based.deleteRow('users', ID);
       await wait();
       expect(mockStorage.get(ID)).toBeUndefined();
+    });
+  });
+
+  describe('persister', () => {
+    let mockStorage: Record<string, any> = {};
+    const onRowAddedOrUpdated = vi.fn(async (tableName, rowId, entity) => {
+      mockStorage[tableName] = mockStorage[tableName] || [];
+      const existingIndex = mockStorage[tableName].findIndex(
+        (entity: any) => entity.id === rowId
+      );
+      if (existingIndex !== -1) {
+        mockStorage[tableName][existingIndex] = entity;
+      } else {
+        mockStorage[tableName].push(entity);
+      }
+    });
+
+    const TestPersister = (
+      databaseName: string
+    ): SchemaPersister<InferSchema<typeof baseBuilder>> => ({
+      onInit: async () => {
+        mockStorage['__databaseName'] = databaseName;
+      },
+      getTable: async (tableName) => {
+        return mockStorage[tableName] || [];
+      },
+      onRowAddedOrUpdated,
+      onRowRemoved: async (tableName, rowId) => {
+        mockStorage[tableName] = mockStorage[tableName] || [];
+        mockStorage[tableName] = mockStorage[tableName].filter(
+          (entity: any) => entity.id !== rowId
+        );
+      },
+    });
+
+    const basedSchema = new SchemaBuilder()
+      .addTable(usersTable)
+      .addPersister(TestPersister('test_db'));
+
+    beforeEach(() => {
+      mockStorage = {};
+      onRowAddedOrUpdated.mockClear();
+    });
+
+    it('calls onInit on build', async () => {
+      await basedSchema.build();
+      expect(mockStorage['__databaseName']).toBe('test_db');
+    });
+
+    it('hydrates from persister', async () => {
+      mockStorage = {
+        users: [exampleUser],
+      };
+
+      const based = await basedSchema.build();
+
+      expect(based.getRow('users', USER_ID_1)).toEqual(exampleUser);
+    });
+
+    it('persists row add/update', async () => {
+      const based = await basedSchema.build();
+
+      based.setRow('users', USER_ID_1, exampleUser);
+
+      expect(mockStorage['users']).toEqual([exampleUser]);
+
+      based.setCell('users', USER_ID_1, 'age', 85);
+
+      expect(mockStorage['users']).toEqual([{ ...exampleUser, age: 85 }]);
+    });
+
+    it('persists row removal', async () => {
+      mockStorage = {
+        users: [exampleUser],
+      };
+
+      const based = await basedSchema.build();
+
+      based.deleteRow('users', USER_ID_1);
+
+      expect(mockStorage['users']).toEqual([]);
+    });
+
+    it('it should not invoke row change events on hydration', async () => {
+      mockStorage = {
+        users: [exampleUser],
+      };
+
+      const otherEventHandlers = vi.fn();
+
+      const based = await basedSchema
+        .onRowAddedOrUpdated(otherEventHandlers)
+        .build();
+
+      expect(onRowAddedOrUpdated).not.toBeCalled();
+      expect(otherEventHandlers).not.toBeCalled();
+      expect(based.getRow('users', USER_ID_1)).toEqual(exampleUser);
     });
   });
 });

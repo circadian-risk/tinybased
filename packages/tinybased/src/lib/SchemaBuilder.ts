@@ -5,7 +5,9 @@ import {
   OnlyStringKeys,
   RelationshipDefinition,
   RowChangeHandler,
+  SchemaHydrator,
   SchemaHydrators,
+  SchemaPersister,
   TinyBaseSchema,
 } from './types';
 
@@ -18,8 +20,9 @@ export class SchemaBuilder<
   private readonly relationshipDefinitions: RelationshipDefinition[] = [];
   private hydrators: SchemaHydrators<TBSchema> =
     {} as SchemaHydrators<TBSchema>;
-  private rowRemovedHandler?: RowChangeHandler<TBSchema>;
-  private rowAddedOrUpdatedHandler?: RowChangeHandler<TBSchema>;
+  private persisters = new Set<SchemaPersister<TBSchema>>();
+  private rowRemovedHandlers = new Set<RowChangeHandler<TBSchema>>();
+  private rowAddedOrUpdatedHandlers = new Set<RowChangeHandler<TBSchema>>();
 
   public defineRelationship<
     TRelationshipName extends string,
@@ -62,20 +65,57 @@ export class SchemaBuilder<
     return this;
   }
 
+  public addPersister(persister: SchemaPersister<TBSchema>) {
+    this.persisters.add(persister);
+    return this;
+  }
+
   public async build(): Promise<TinyBased<TBSchema, TRelationships>> {
-    const tb = new TinyBased(
+    const tb = new TinyBased<TBSchema, TRelationships>(
       this.tables,
-      this.relationshipDefinitions,
-      this.hydrators,
-      {
-        rowAddedOrUpdatedHandler: this.rowAddedOrUpdatedHandler,
-        rowRemovedHandler: this.rowRemovedHandler,
-      }
+      this.relationshipDefinitions
     );
 
-    if (Object.keys(this.hydrators).length) {
-      await tb.hydrate();
-    }
+    // Init persisters
+
+    await Promise.all(
+      Array.from(this.persisters).map((persister) => persister.onInit())
+    );
+
+    // Hydrate tables
+
+    Object.entries(this.hydrators).forEach((hydrator) => {
+      tb.tableHydrators.add(hydrator as SchemaHydrator<TBSchema>);
+    });
+
+    this.persisters.forEach((persister) => {
+      Array.from(this.tables.keys()).forEach((tableName) => {
+        tb.tableHydrators.add([
+          tableName,
+          () => persister.getTable(tableName),
+        ] as SchemaHydrator<TBSchema>);
+      });
+    });
+
+    await tb.hydrate();
+
+    // Event handlers
+
+    this.rowAddedOrUpdatedHandlers.forEach((handler) => {
+      tb.events.onRowAddedOrUpdated.add(handler);
+    });
+    this.rowRemovedHandlers.forEach((handler) => {
+      tb.events.onRowRemoved.add(handler);
+    });
+
+    Object.entries(this.hydrators).forEach((hydrator) => {
+      tb.tableHydrators.add(hydrator as SchemaHydrator<TBSchema>);
+    });
+
+    this.persisters.forEach((persister) => {
+      tb.events.onRowAddedOrUpdated.add(persister.onRowAddedOrUpdated);
+      tb.events.onRowRemoved.add(persister.onRowRemoved);
+    });
 
     tb.init();
 
@@ -83,12 +123,12 @@ export class SchemaBuilder<
   }
 
   public onRowAddedOrUpdated(handler: RowChangeHandler<TBSchema>) {
-    this.rowAddedOrUpdatedHandler = handler;
+    this.rowAddedOrUpdatedHandlers.add(handler);
     return this;
   }
 
   public onRowRemoved(handler: RowChangeHandler<TBSchema>) {
-    this.rowRemovedHandler = handler;
+    this.rowRemovedHandlers.add(handler);
     return this;
   }
 }

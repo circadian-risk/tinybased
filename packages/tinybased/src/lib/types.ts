@@ -1,9 +1,32 @@
+import { SchemaBuilder } from './SchemaBuilder';
+
 export type Cell = string | number | boolean;
 export type Table = Record<string, Cell>;
 export type TinyBaseSchema = Record<string, Table>;
+export type TableNames<TBSchema extends TinyBaseSchema> =
+  OnlyStringKeys<TBSchema>;
+
+export type InferSchema<SB> = SB extends SchemaBuilder<infer S, any>
+  ? S
+  : never;
 
 export type SchemaHydrators<TBSchema extends TinyBaseSchema> = {
   [TTableName in keyof TBSchema]: () => Promise<TBSchema[TTableName][]>;
+};
+
+export type SchemaHydrator<TBSchema extends TinyBaseSchema> = {
+  [TTableName in keyof TBSchema]: TTableName extends string
+    ? [TTableName, () => Promise<TBSchema[TTableName][]>]
+    : never;
+}[keyof TBSchema];
+
+export type SchemaPersister<TBSchema extends TinyBaseSchema> = {
+  onInit: () => Promise<void> | void;
+  getTable: <TTableName extends keyof TBSchema>(
+    tableName: TTableName
+  ) => Promise<TBSchema[TTableName][]> | TBSchema[TTableName][];
+  onRowAddedOrUpdated: RowChangeHandler<TBSchema>;
+  onRowRemoved: RowChangeHandler<TBSchema>;
 };
 
 export type Aggregations = 'avg' | 'count' | 'sum' | 'max' | 'min';
