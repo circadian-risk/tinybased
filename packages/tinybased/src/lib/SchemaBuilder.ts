@@ -2,8 +2,9 @@
 import { TableBuilder } from './TableBuilder';
 import { TinyBased } from './tinybased';
 import {
+  DeepPrettify,
   OnlyStringKeys,
-  PersisterSchema,
+  TableDefs,
   RelationshipDefinition,
   RowChangeHandler,
   SchemaHydrator,
@@ -88,7 +89,7 @@ export class SchemaBuilder<
             keyBy: tableBuilder.keys,
           },
         ])
-      ) as PersisterSchema<TBSchema>;
+      ) as DeepPrettify<TableDefs<TBSchema>>;
 
       await Promise.all(
         Array.from(this.persisters).map((persister) =>
@@ -99,12 +100,12 @@ export class SchemaBuilder<
     // Hydrate tables
 
     Object.entries(this.hydrators).forEach((hydrator) => {
-      tb.tableHydrators.add(hydrator as SchemaHydrator<TBSchema>);
+      tb.hydrators.add(hydrator as SchemaHydrator<TBSchema>);
     });
 
     this.persisters.forEach((persister) => {
       Array.from(this.tables.keys()).forEach((tableName) => {
-        tb.tableHydrators.add([
+        tb.hydrators.add([
           tableName,
           () => persister.getTable(tableName),
         ] as SchemaHydrator<TBSchema>);
@@ -120,10 +121,6 @@ export class SchemaBuilder<
     });
     this.rowRemovedHandlers.forEach((handler) => {
       tb.events.onRowRemoved.add(handler);
-    });
-
-    Object.entries(this.hydrators).forEach((hydrator) => {
-      tb.tableHydrators.add(hydrator as SchemaHydrator<TBSchema>);
     });
 
     this.persisters.forEach((persister) => {

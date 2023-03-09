@@ -21,7 +21,7 @@ export type SchemaHydrator<TBSchema extends TinyBaseSchema> = {
     : never;
 }[keyof TBSchema];
 
-export type PersisterSchema<TBSchema extends TinyBaseSchema> = {
+export type TableDefs<TBSchema extends TinyBaseSchema> = {
   [TTableName in keyof TBSchema]: {
     cells: CellSchema[];
     keyBy: string[];
@@ -29,7 +29,7 @@ export type PersisterSchema<TBSchema extends TinyBaseSchema> = {
 };
 
 export type SchemaPersister<TBSchema extends TinyBaseSchema> = {
-  onInit: (schema: PersisterSchema<TBSchema>) => Promise<void> | void;
+  onInit: (schema: DeepPrettify<TableDefs<TBSchema>>) => Promise<void> | void;
   getTable: <TTableName extends keyof TBSchema>(
     tableName: TTableName
   ) => Promise<TBSchema[TTableName][]> | TBSchema[TTableName][];
@@ -67,3 +67,16 @@ export type Prettify<T> = {
   [K in keyof T]: T[K];
   // eslint-disable-next-line @typescript-eslint/ban-types
 } & {};
+
+export type DeepPrettify<T> = T extends object
+  ? {
+      [K in keyof T]: T[K] extends object
+        ? DeepPrettify<T[K]>
+        : T[K] extends Array<infer U>
+        ? Array<DeepPrettify<U>>
+        : T[K];
+      // eslint-disable-next-line @typescript-eslint/ban-types
+    } & {}
+  : T extends Array<infer U>
+  ? Array<DeepPrettify<U>>
+  : T;

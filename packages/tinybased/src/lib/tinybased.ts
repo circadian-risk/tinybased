@@ -35,7 +35,7 @@ export class TinyBased<
     onRowAddedOrUpdated: new Set<RowChangeHandler<TBSchema>>(),
     onRowRemoved: new Set<RowChangeHandler<TBSchema>>(),
   } as const;
-  public readonly tableHydrators = new Set<SchemaHydrator<TBSchema>>();
+  public readonly hydrators = new Set<SchemaHydrator<TBSchema>>();
 
   /** It is highly recommended that you do not call this constructor directly unless you know exactly what you're doing.
    * Instead, use the SchemaBuilder class to build your schema and then call .build() to receive an instance of this class
@@ -89,9 +89,9 @@ export class TinyBased<
   }
 
   public async hydrate() {
-    if (this.tableHydrators.size > 0) {
+    if (this.hydrators.size > 0) {
       await Promise.all(
-        Array.from(this.tableHydrators).map(async ([table, hydrator]) => {
+        Array.from(this.hydrators).map(async ([table, hydrator]) => {
           const entries = await hydrator();
           const tableKeys = this.tables.get(table)?.keys ?? [];
           this.store.setTable(
