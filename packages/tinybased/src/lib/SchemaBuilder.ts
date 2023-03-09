@@ -100,12 +100,12 @@ export class SchemaBuilder<
     // Hydrate tables
 
     Object.entries(this.hydrators).forEach((hydrator) => {
-      tb.tableHydrators.add(hydrator as SchemaHydrator<TBSchema>);
+      tb.hydrators.add(hydrator as SchemaHydrator<TBSchema>);
     });
 
     this.persisters.forEach((persister) => {
       Array.from(this.tables.keys()).forEach((tableName) => {
-        tb.tableHydrators.add([
+        tb.hydrators.add([
           tableName,
           () => persister.getTable(tableName),
         ] as SchemaHydrator<TBSchema>);
@@ -124,12 +124,12 @@ export class SchemaBuilder<
     });
 
     Object.entries(this.hydrators).forEach((hydrator) => {
-      tb.tableHydrators.add(hydrator as SchemaHydrator<TBSchema>);
+      tb.hydrators.add(hydrator as SchemaHydrator<TBSchema>);
     });
 
     this.persisters.forEach((persister) => {
-      tb.events.onRowAddedOrUpdated.add(persister.onRowAddedOrUpdated);
-      tb.events.onRowRemoved.add(persister.onRowRemoved);
+      tb.persisterEvents.onRowAddedOrUpdated.add(persister.onRowAddedOrUpdated);
+      tb.persisterEvents.onRowRemoved.add(persister.onRowRemoved);
     });
 
     tb.init();

@@ -22,6 +22,10 @@ import { TableBuilder } from './TableBuilder';
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
 
+interface SettersOptions {
+  skipRowListeners?: boolean;
+}
+
 // eslint-disable-next-line @typescript-eslint/ban-types
 export class TinyBased<
   TBSchema extends TinyBaseSchema = {},
@@ -35,7 +39,11 @@ export class TinyBased<
     onRowAddedOrUpdated: new Set<RowChangeHandler<TBSchema>>(),
     onRowRemoved: new Set<RowChangeHandler<TBSchema>>(),
   } as const;
-  public readonly tableHydrators = new Set<SchemaHydrator<TBSchema>>();
+  public readonly persisterEvents = {
+    onRowAddedOrUpdated: new Set<RowChangeHandler<TBSchema>>(),
+    onRowRemoved: new Set<RowChangeHandler<TBSchema>>(),
+  } as const;
+  public readonly hydrators = new Set<SchemaHydrator<TBSchema>>();
 
   /** It is highly recommended that you do not call this constructor directly unless you know exactly what you're doing.
    * Instead, use the SchemaBuilder class to build your schema and then call .build() to receive an instance of this class
@@ -72,26 +80,52 @@ export class TinyBased<
    */
   public init() {
     if (
-      this.events.onRowAddedOrUpdated.size > 0 ||
-      this.events.onRowRemoved.size > 0
+      this.persisterEvents.onRowAddedOrUpdated.size > 0 ||
+      this.persisterEvents.onRowRemoved.size > 0
     ) {
       this.store.addRowListener(null, null, (store, table, rowId) => {
         if (store.hasRow(table, rowId)) {
           const row = store.getRow(table, rowId);
-          this.events.onRowAddedOrUpdated?.forEach((handler) =>
+          this.persisterEvents.onRowAddedOrUpdated.forEach((handler) =>
             handler(table, rowId, row)
           );
         } else {
-          this.events.onRowRemoved?.forEach((handler) => handler(table, rowId));
+          this.persisterEvents.onRowRemoved.forEach((handler) =>
+            handler(table, rowId)
+          );
         }
       });
     }
   }
 
+  private dispatchEventsWrapper<TTable extends keyof TBSchema, ER>(
+    table: TTable,
+    rowId: string,
+    options: SettersOptions,
+    executor: () => ER
+  ): ER {
+    const previousRow = this.store.getRow(table as string, rowId);
+    const output = executor();
+    if (!options?.skipRowListeners) {
+      const hasRow = this.store.hasRow(table as string, rowId);
+      if (!hasRow) {
+        this.events.onRowRemoved.forEach((handler) =>
+          handler(table, rowId, undefined, previousRow)
+        );
+      } else {
+        const currentRow = this.store.getRow(table as string, rowId);
+        this.events.onRowAddedOrUpdated.forEach((handler) =>
+          handler(table, rowId, currentRow, previousRow)
+        );
+      }
+    }
+    return output;
+  }
+
   public async hydrate() {
-    if (this.tableHydrators.size > 0) {
+    if (this.hydrators.size > 0) {
       await Promise.all(
-        Array.from(this.tableHydrators).map(async ([table, hydrator]) => {
+        Array.from(this.hydrators).map(async ([table, hydrator]) => {
           const entries = await hydrator();
           const tableKeys = this.tables.get(table)?.keys ?? [];
           this.store.setTable(
@@ -116,9 +150,12 @@ export class TinyBased<
   setRow<TTable extends keyof TBSchema>(
     table: TTable,
     rowId: string,
-    row: TBSchema[TTable]
+    row: TBSchema[TTable],
+    options?: SettersOptions
   ) {
-    this.store.setRow(table as string, rowId, row);
+    this.dispatchEventsWrapper(table, rowId, options ?? {}, () => {
+      this.store.setRow(table as string, rowId, row);
+    });
   }
 
   getRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
@@ -150,8 +187,14 @@ export class TinyBased<
     );
   }
 
-  deleteRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
-    return this.store.delRow(table as string, rowId);
+  deleteRow<TTable extends keyof TBSchema>(
+    table: TTable,
+    rowId: string,
+    options?: SettersOptions
+  ) {
+    this.dispatchEventsWrapper(table, rowId, options ?? {}, () => {
+      this.store.delRow(table as string, rowId);
+    });
   }
 
   getCell<TTable extends keyof TBSchema, TCell extends keyof TBSchema[TTable]>(
@@ -170,19 +213,24 @@ export class TinyBased<
     table: TTable,
     rowId: string,
     cellId: TCell,
-    value: TBSchema[TTable][TCell]
+    value: TBSchema[TTable][TCell],
+    options?: SettersOptions
   ) {
-    if (value == null) {
-      return this.store.delCell(table as string, rowId, cellId as string);
-    }
-    return this.store.setCell(table as string, rowId, cellId as string, value);
+    this.dispatchEventsWrapper(table, rowId, options ?? {}, () => {
+      if (value == null) {
+        this.store.delCell(table as string, rowId, cellId as string);
+      }
+      this.store.setCell(table as string, rowId, cellId as string, value);
+    });
   }
 
   deleteCell<
     TTable extends keyof TBSchema,
     TCell extends keyof TBSchema[TTable]
-  >(table: TTable, rowId: string, cellId: TCell) {
-    return this.store.delCell(table as string, rowId, cellId as string);
+  >(table: TTable, rowId: string, cellId: TCell, options?: SettersOptions) {
+    this.dispatchEventsWrapper(table, rowId, options ?? {}, () => {
+      this.store.delCell(table as string, rowId, cellId as string);
+    });
   }
 
   getLocalIds(relationshipName: TRelationships, rowId: string) {
