@@ -368,6 +368,24 @@ describe('tinybased', () => {
       expect(onRowAddedOrUpdated).not.toHaveBeenCalled();
       expect(onRowRemoved).not.toHaveBeenCalled();
     });
+
+    it('do not skip unskippable event handlers', async () => {
+      const onRowAddedOrUpdated = vi.fn();
+      const onRowRemoved = vi.fn();
+
+      const based = await baseBuilder
+        .onRowAddedOrUpdated(onRowAddedOrUpdated, { unskippable: true })
+        .onRowRemoved(onRowRemoved, { unskippable: true })
+        .build();
+
+      based.setRow('users', USER_ID_1, exampleUser, { skipRowListeners: true });
+      based.setCell('users', USER_ID_1, 'age', 35, { skipRowListeners: true });
+      based.deleteCell('users', USER_ID_1, 'age', { skipRowListeners: true });
+      based.deleteRow('users', USER_ID_1, { skipRowListeners: true });
+
+      expect(onRowAddedOrUpdated).toHaveBeenCalled();
+      expect(onRowRemoved).toHaveBeenCalled();
+    });
   });
 
   describe('persister', () => {

@@ -39,7 +39,7 @@ export class TinyBased<
     onRowAddedOrUpdated: new Set<RowChangeHandler<TBSchema>>(),
     onRowRemoved: new Set<RowChangeHandler<TBSchema>>(),
   } as const;
-  public readonly persisterEvents = {
+  public readonly tinybaseEvents = {
     onRowAddedOrUpdated: new Set<RowChangeHandler<TBSchema>>(),
     onRowRemoved: new Set<RowChangeHandler<TBSchema>>(),
   } as const;
@@ -80,17 +80,17 @@ export class TinyBased<
    */
   public init() {
     if (
-      this.persisterEvents.onRowAddedOrUpdated.size > 0 ||
-      this.persisterEvents.onRowRemoved.size > 0
+      this.tinybaseEvents.onRowAddedOrUpdated.size > 0 ||
+      this.tinybaseEvents.onRowRemoved.size > 0
     ) {
       this.store.addRowListener(null, null, (store, table, rowId) => {
         if (store.hasRow(table, rowId)) {
           const row = store.getRow(table, rowId);
-          this.persisterEvents.onRowAddedOrUpdated.forEach((handler) =>
+          this.tinybaseEvents.onRowAddedOrUpdated.forEach((handler) =>
             handler(table, rowId, row)
           );
         } else {
-          this.persisterEvents.onRowRemoved.forEach((handler) =>
+          this.tinybaseEvents.onRowRemoved.forEach((handler) =>
             handler(table, rowId)
           );
         }

@@ -23,8 +23,10 @@ export class SchemaBuilder<
   private hydrators: SchemaHydrators<TBSchema> =
     {} as SchemaHydrators<TBSchema>;
   private persisters = new Set<SchemaPersister<TBSchema>>();
-  private rowRemovedHandlers = new Set<RowChangeHandler<TBSchema>>();
-  private rowAddedOrUpdatedHandlers = new Set<RowChangeHandler<TBSchema>>();
+  private rowRemovedHandlers = new Set<[RowChangeHandler<TBSchema>, boolean]>();
+  private rowAddedOrUpdatedHandlers = new Set<
+    [RowChangeHandler<TBSchema>, boolean]
+  >();
 
   public defineRelationship<
     TRelationshipName extends string,
@@ -116,16 +118,25 @@ export class SchemaBuilder<
 
     // Event handlers
 
-    this.rowAddedOrUpdatedHandlers.forEach((handler) => {
+    this.rowAddedOrUpdatedHandlers.forEach(([handler, unskippable]) => {
+      if (unskippable) {
+        tb.tinybaseEvents.onRowAddedOrUpdated.add(handler);
+        return;
+      }
       tb.events.onRowAddedOrUpdated.add(handler);
     });
-    this.rowRemovedHandlers.forEach((handler) => {
+
+    this.rowRemovedHandlers.forEach(([handler, unskippable]) => {
+      if (unskippable) {
+        tb.tinybaseEvents.onRowRemoved.add(handler);
+        return;
+      }
       tb.events.onRowRemoved.add(handler);
     });
 
     this.persisters.forEach((persister) => {
-      tb.persisterEvents.onRowAddedOrUpdated.add(persister.onRowAddedOrUpdated);
-      tb.persisterEvents.onRowRemoved.add(persister.onRowRemoved);
+      tb.tinybaseEvents.onRowAddedOrUpdated.add(persister.onRowAddedOrUpdated);
+      tb.tinybaseEvents.onRowRemoved.add(persister.onRowRemoved);
     });
 
     tb.init();
@@ -133,13 +144,22 @@ export class SchemaBuilder<
     return tb as TinyBased<TBSchema, TRelationships>;
   }
 
-  public onRowAddedOrUpdated(handler: RowChangeHandler<TBSchema>) {
-    this.rowAddedOrUpdatedHandlers.add(handler);
+  public onRowAddedOrUpdated(
+    handler: RowChangeHandler<TBSchema>,
+    options?: { unskippable?: boolean }
+  ) {
+    this.rowAddedOrUpdatedHandlers.add([
+      handler,
+      options?.unskippable || false,
+    ]);
     return this;
   }
 
-  public onRowRemoved(handler: RowChangeHandler<TBSchema>) {
-    this.rowRemovedHandlers.add(handler);
+  public onRowRemoved(
+    handler: RowChangeHandler<TBSchema>,
+    options?: { unskippable?: boolean }
+  ) {
+    this.rowRemovedHandlers.add([handler, options?.unskippable || false]);
     return this;
   }
 }
