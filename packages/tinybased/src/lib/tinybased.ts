@@ -17,6 +17,7 @@ import {
   TinyBaseSchema,
 } from './types';
 import keyBy from 'lodash/keyBy';
+import { TableBuilder } from './TableBuilder';
 
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
@@ -40,7 +41,7 @@ export class TinyBased<
    * Instead, use the SchemaBuilder class to build your schema and then call .build() to receive an instance of this class
    */
   constructor(
-    tableNames: Set<string>,
+    private readonly tables: Map<string, TableBuilder<any, any>>,
     relationshipDefs: RelationshipDefinition[] = [],
     private readonly hydrators: SchemaHydrators<TBSchema> = {} as SchemaHydrators<TBSchema>,
     private readonly options: TinyBasedOptions<TBSchema> = {}
@@ -50,7 +51,7 @@ export class TinyBased<
     this.relationships = createRelationships(this.store);
     this.queries = createQueries(this.store);
 
-    for (const table of tableNames) {
+    for (const table of tables.keys()) {
       // TODO: Do we want to actually define schema here on the tinybase instance
 
       // Define a metric that will make it easy to maintain the count of rows in this table
@@ -91,8 +92,11 @@ export class TinyBased<
     await Promise.all(
       Object.entries(this.hydrators).map(async ([table, hydrator]) => {
         const entries = await hydrator();
-        // TODO currently we assume the entity will have a property called id
-        this.store.setTable(table, keyBy(entries, 'id'));
+        const tableKeys = this.tables.get(table)?.keys ?? [];
+        this.store.setTable(
+          table,
+          keyBy(entries, (e) => `${tableKeys.map((k) => e[k]).join('::')}`)
+        );
       })
     );
   }
@@ -166,6 +170,9 @@ export class TinyBased<
     cellId: TCell,
     value: TBSchema[TTable][TCell]
   ) {
+    if (value == null) {
+      return this.store.delCell(table as string, rowId, cellId as string);
+    }
     return this.store.setCell(table as string, rowId, cellId as string, value);
   }
 

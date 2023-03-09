@@ -1,22 +1,11 @@
 import { SchemaBuilder } from './SchemaBuilder';
+import { notesTable, usersTable } from '../fixture/database';
 import { Table } from './types';
+import { TableBuilder } from './TableBuilder';
 
 const USER_ID_1 = 'user1';
 const USER_ID_2 = 'user2';
 const NOTE_ID = 'noteId1';
-
-const userSchema = {
-  id: String,
-  name: String,
-  age: Number,
-  isAdmin: Boolean,
-};
-
-const noteSchema = {
-  id: String,
-  text: String,
-  userId: String,
-};
 
 const exampleUser = {
   id: USER_ID_1,
@@ -31,7 +20,7 @@ const exampleNote = {
   userId: USER_ID_1,
 };
 
-const baseBuilder = new SchemaBuilder().defineTable('users', userSchema);
+const baseBuilder = new SchemaBuilder().addTable(usersTable);
 
 describe('tinybased', () => {
   it('should handle type safe rows and cells', async () => {
@@ -45,6 +34,20 @@ describe('tinybased', () => {
     based.deleteCell('users', '1', 'age');
     const age2 = based.getCell('users', '1', 'age');
     expect(age2).toBeUndefined();
+  });
+
+  it('handles null/undefined cells', async () => {
+    const based = await baseBuilder.build();
+    based.setRow('users', '1', exampleUser);
+    const onChange = vi.fn();
+
+    based.store.addRowListener(null, null, () => {
+      onChange();
+    });
+
+    based.setCell('users', '1', 'age', null as any);
+
+    expect(onChange).toHaveBeenCalledOnce();
   });
 
   it('getSortedRowIds: should return sorted id by cell', async () => {
@@ -104,8 +107,8 @@ describe('tinybased', () => {
   describe('queries', () => {
     it('handles simple queries', async () => {
       const based = await new SchemaBuilder()
-        .defineTable('users', userSchema)
-        .defineTable('notes', noteSchema)
+        .addTable(usersTable)
+        .addTable(notesTable)
         .build();
 
       const queryBuilder = based
@@ -155,7 +158,7 @@ describe('tinybased', () => {
 
     it('can sort query results', async () => {
       const based = await new SchemaBuilder()
-        .defineTable('users', userSchema)
+        .addTable(usersTable)
         .defineHydrators({
           users: () =>
             Promise.resolve([
@@ -202,8 +205,8 @@ describe('tinybased', () => {
 
     it('handles simple aggregate queries', async () => {
       const based = await new SchemaBuilder()
-        .defineTable('users', userSchema)
-        .defineTable('notes', noteSchema)
+        .addTable(usersTable)
+        .addTable(notesTable)
         .build();
 
       const queryBuilder = based
@@ -261,8 +264,8 @@ describe('tinybased', () => {
   describe('relationships', () => {
     it('allows resolving ids from both sides of a defined relationship', async () => {
       const based = await new SchemaBuilder()
-        .defineTable('users', userSchema)
-        .defineTable('notes', noteSchema)
+        .addTable(usersTable)
+        .addTable(notesTable)
         .defineRelationship('userNotes', 'notes', 'users', 'userId')
         .build();
 
@@ -283,7 +286,7 @@ describe('tinybased', () => {
   describe('hydration', () => {
     it('should hydrate upon creation using provided hydrators', async () => {
       const based = await baseBuilder
-        .defineTable('notes', noteSchema)
+        .addTable(notesTable)
         .defineHydrators({
           users: () => Promise.resolve([exampleUser]),
           notes: () => Promise.resolve([exampleNote]),
@@ -292,6 +295,28 @@ describe('tinybased', () => {
 
       expect(based.getRow('users', USER_ID_1)).toEqual(exampleUser);
       expect(based.getRow('notes', NOTE_ID)).toEqual(exampleNote);
+    });
+
+    it('should handle composite keys during hydration', async () => {
+      const tableWithCompositeKey = new TableBuilder('composite')
+        .add('comp1', 'string')
+        .add('comp2', 'string')
+        .keyBy(['comp1', 'comp2']);
+
+      const KEY1 = 'key1';
+      const KEY2 = 'key2';
+      const expectedRowId = `${KEY1}::${KEY2}`;
+
+      const row = { comp1: KEY1, comp2: KEY2 };
+
+      const based = await new SchemaBuilder()
+        .addTable(tableWithCompositeKey)
+        .defineHydrators({
+          composite: () => Promise.resolve([row]),
+        })
+        .build();
+
+      expect(based.getRow('composite', expectedRowId)).toEqual(row);
     });
   });
 
