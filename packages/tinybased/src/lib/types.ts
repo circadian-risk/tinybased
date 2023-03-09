@@ -27,37 +27,12 @@ export type RowChangeHandler<TBSchema extends TinyBaseSchema> = (
   entity?: Table
 ) => Promise<void>;
 
-type SchemaCellType =
-  | StringConstructor
-  | NumberConstructor
-  | BooleanConstructor
-  | null
-  | undefined;
+export type OnlyStringKeys<T extends Record<PropertyKey, unknown>> = Exclude<
+  keyof T,
+  number | symbol
+>;
 
-export type TableSchema = Record<string, SchemaCellType>;
-
-type ParseSchemaCellType<T extends SchemaCellType> = T extends StringConstructor
-  ? string
-  : T extends NumberConstructor
-  ? number
-  : T extends BooleanConstructor
-  ? boolean
-  : T extends null
-  ? null
-  : T extends undefined
-  ? undefined
-  : never;
-
-export type ParseTableSchema<TSchema extends TableSchema> =
-  UndefinedToOptional<{
-    [K in keyof TSchema]: ParseSchemaCellType<TSchema[K]>;
-  }>;
-
-// Utils
-
-type UndefinedProperties<T> = {
-  [P in keyof T]-?: undefined extends T[P] ? P : never;
-}[keyof T];
-
-type UndefinedToOptional<T> = Partial<Pick<T, UndefinedProperties<T>>> &
-  Pick<T, Exclude<keyof T, UndefinedProperties<T>>>;
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+  // eslint-disable-next-line @typescript-eslint/ban-types
+} & {};

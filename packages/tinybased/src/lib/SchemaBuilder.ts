@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/ban-types */
+import { TableBuilder } from './TableBuilder';
 import { TinyBased } from './tinybased';
 import {
-  ParseTableSchema,
+  OnlyStringKeys,
   RelationshipDefinition,
   RowChangeHandler,
-  TableSchema,
   SchemaHydrators,
   TinyBaseSchema,
 } from './types';
@@ -13,7 +13,8 @@ export class SchemaBuilder<
   TBSchema extends TinyBaseSchema = {},
   TRelationships extends string = never
 > {
-  private readonly tables: Set<string> = new Set();
+  private readonly tables: Map<string, TableBuilder<any, any>> = new Map();
+
   private readonly relationshipDefinitions: RelationshipDefinition[] = [];
   private hydrators: SchemaHydrators<TBSchema> =
     {} as SchemaHydrators<TBSchema>;
@@ -22,9 +23,9 @@ export class SchemaBuilder<
 
   public defineRelationship<
     TRelationshipName extends string,
-    TTableFrom extends keyof TBSchema,
-    TTableTo extends keyof TBSchema,
-    TCellFrom extends keyof TBSchema[TTableFrom]
+    TTableFrom extends OnlyStringKeys<TBSchema>,
+    TTableTo extends OnlyStringKeys<TBSchema>,
+    TCellFrom extends OnlyStringKeys<TBSchema[TTableFrom]>
   >(
     name: TRelationshipName,
     tableFrom: TTableFrom,
@@ -33,9 +34,9 @@ export class SchemaBuilder<
   ): SchemaBuilder<TBSchema, TRelationships | TRelationshipName> {
     this.relationshipDefinitions.push({
       name,
-      from: tableFrom as string,
-      to: tableTo as string,
-      cell: cellFrom as string,
+      from: tableFrom,
+      to: tableTo,
+      cell: cellFrom,
     });
 
     return this as unknown as SchemaBuilder<
@@ -44,23 +45,16 @@ export class SchemaBuilder<
     >;
   }
 
-  public defineTable<
-    TTableName extends string,
-    TSchema extends TableSchema,
-    TTable = ParseTableSchema<TSchema>
-  >(
-    tableName: TTableName,
-    _tableSchema: TSchema
-  ): SchemaBuilder<TBSchema & Record<TTableName, TTable>, TRelationships> {
-    if (this.tables.has(tableName)) {
-      throw new Error(`Table ${tableName} already defined`);
+  public addTable<TName extends string, TCells extends Record<string, unknown>>(
+    tableBuilder: TableBuilder<TName, TCells>
+  ) {
+    if (this.tables.has(tableBuilder.tableName)) {
+      throw new Error(`Table ${tableBuilder.tableName} already defined`);
     }
 
-    this.tables.add(tableName);
+    this.tables.set(tableBuilder.tableName, tableBuilder);
 
-    return this as unknown as SchemaBuilder<
-      TBSchema & Record<TTableName, TTable>
-    >;
+    return this as unknown as SchemaBuilder<TBSchema & Record<TName, TCells>>;
   }
 
   public defineHydrators(hydrators: SchemaHydrators<TBSchema>) {

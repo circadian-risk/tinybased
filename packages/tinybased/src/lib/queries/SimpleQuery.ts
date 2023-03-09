@@ -1,10 +1,10 @@
 import { Queries } from 'tinybase/cjs/queries';
-import { QueryOptions, Table } from '../types';
+import { OnlyStringKeys, QueryOptions, Table } from '../types';
 
 export class SimpleQuery<
   // eslint-disable-next-line @typescript-eslint/ban-types
   TTable extends Table = {},
-  TCells extends keyof TTable = never
+  TCells extends OnlyStringKeys<TTable> = never
 > {
   constructor(
     public readonly queries: Queries,
@@ -19,7 +19,7 @@ export class SimpleQuery<
     const { descending = false, offset, limit } = options || {};
     return this.queries.getResultSortedRowIds(
       this.queryId,
-      sortBy as string,
+      sortBy,
       descending,
       offset,
       limit

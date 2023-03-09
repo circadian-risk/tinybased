@@ -8,11 +8,11 @@ import {
 } from 'tinybase/cjs/ui-react';
 import { SimpleQuery } from './queries';
 import { TinyBased } from './tinybased';
-import { QueryOptions, Table, TinyBaseSchema } from './types';
+import { OnlyStringKeys, QueryOptions, Table, TinyBaseSchema } from './types';
 
 export const useSimpleQueryResultTable = <
   TTable extends Table = {},
-  TCells extends keyof TTable = never
+  TCells extends OnlyStringKeys<TTable> = never
 >(
   query: SimpleQuery<TTable, TCells>
 ): Record<string, Pick<TTable, TCells>> => {
@@ -28,12 +28,12 @@ export function useSimpleQueryResultIds(query: SimpleQuery) {
 
 export function useSimpleQuerySortedResultIds<
   TTable extends Table = {},
-  TCells extends keyof TTable = never
+  TCells extends OnlyStringKeys<TTable> = never
 >(query: SimpleQuery<TTable, TCells>, sortBy: TCells, options?: QueryOptions) {
   const { descending = false, offset, limit } = options || {};
   return useResultSortedRowIds(
     query.queryId,
-    sortBy as string,
+    sortBy,
     descending,
     offset,
     limit,

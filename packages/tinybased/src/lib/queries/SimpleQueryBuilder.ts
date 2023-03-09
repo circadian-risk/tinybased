@@ -1,12 +1,12 @@
 import { Queries } from 'tinybase/cjs/queries';
-import { Aggregations, Cell, Table } from '../types';
+import { Aggregations, Cell, OnlyStringKeys, Table } from '../types';
 import { SimpleAggregateQuery } from './SimpleAggregateQuery';
 import { SimpleQuery } from './SimpleQuery';
 
 export class SimpleQueryBuilder<
   // eslint-disable-next-line @typescript-eslint/ban-types
   TTable extends Table = {},
-  TCells extends keyof TTable = never
+  TCells extends OnlyStringKeys<TTable> = never
 > {
   // TODO maybe we should model this as a Map/Record so that conditions for a given cell
   // can be overwritten. This would allow for easier composition of query builder instances
@@ -18,7 +18,7 @@ export class SimpleQueryBuilder<
     private readonly queries: Queries
   ) {}
 
-  select<TCell extends keyof TTable>(
+  select<TCell extends OnlyStringKeys<TTable>>(
     cell: TCell
   ): SimpleQueryBuilder<TTable, TCells | TCell> {
     this.selects.push(cell as any);

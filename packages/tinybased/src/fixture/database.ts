@@ -1,20 +1,18 @@
-import { ParseTableSchema, SchemaBuilder } from '../';
+import { InferTable, SchemaBuilder, TableBuilder } from '../';
 
-const userSchema = {
-  id: String,
-  name: String,
-  age: Number,
-  isAdmin: Boolean,
-};
+export const usersTable = new TableBuilder('users')
+  .add('id', 'string')
+  .add('name', 'string')
+  .add('age', 'number')
+  .add('isAdmin', 'boolean');
 
-const noteSchema = {
-  id: String,
-  text: String,
-  userId: String,
-};
+export const notesTable = new TableBuilder('notes')
+  .add('id', 'string')
+  .add('userId', 'string')
+  .addOptional('text', 'string');
 
-type UserRow = ParseTableSchema<typeof userSchema>;
-type NoteRow = ParseTableSchema<typeof noteSchema>;
+type UserRow = InferTable<typeof usersTable>;
+type NoteRow = InferTable<typeof notesTable>;
 
 export const USER_ID_1 = 'user1';
 export const USER_ID_2 = 'user2';
@@ -61,8 +59,8 @@ export type Schema = {
 
 export async function makeTinyBasedTestFixture() {
   const tinyBasedSample = await new SchemaBuilder()
-    .defineTable('users', userSchema)
-    .defineTable('notes', noteSchema)
+    .addTable(usersTable)
+    .addTable(notesTable)
     .defineHydrators({
       users: () => Promise.resolve([user1, user2]),
       notes: () => Promise.resolve([note1, note2, note3]),
