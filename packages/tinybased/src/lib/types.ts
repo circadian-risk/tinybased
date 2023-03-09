@@ -55,7 +55,8 @@ export type RelationshipDefinition = {
 export type RowChangeHandler<TBSchema extends TinyBaseSchema> = (
   tableName: keyof TBSchema,
   rowId: string,
-  entity?: Table
+  entity?: Table,
+  previousEntity?: Table
 ) => Promise<void>;
 
 export type OnlyStringKeys<T extends Record<PropertyKey, unknown>> = Exclude<

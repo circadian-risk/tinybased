@@ -124,8 +124,8 @@ export class SchemaBuilder<
     });
 
     this.persisters.forEach((persister) => {
-      tb.events.onRowAddedOrUpdated.add(persister.onRowAddedOrUpdated);
-      tb.events.onRowRemoved.add(persister.onRowRemoved);
+      tb.persisterEvents.onRowAddedOrUpdated.add(persister.onRowAddedOrUpdated);
+      tb.persisterEvents.onRowRemoved.add(persister.onRowRemoved);
     });
 
     tb.init();

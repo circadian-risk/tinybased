@@ -320,7 +320,7 @@ describe('tinybased', () => {
     });
   });
 
-  describe('persistence', () => {
+  describe('events', () => {
     it('allows simple handling of row add/update for any table', async () => {
       const mockStorage = new Map<string, Table | undefined>();
       const based = await baseBuilder
@@ -349,6 +349,24 @@ describe('tinybased', () => {
       based.deleteRow('users', ID);
       await wait();
       expect(mockStorage.get(ID)).toBeUndefined();
+    });
+
+    it('skips row listeners when option is specified', async () => {
+      const onRowAddedOrUpdated = vi.fn();
+      const onRowRemoved = vi.fn();
+
+      const based = await baseBuilder
+        .onRowAddedOrUpdated(onRowAddedOrUpdated)
+        .onRowRemoved(onRowRemoved)
+        .build();
+
+      based.setRow('users', USER_ID_1, exampleUser, { skipRowListeners: true });
+      based.setCell('users', USER_ID_1, 'age', 35, { skipRowListeners: true });
+      based.deleteCell('users', USER_ID_1, 'age', { skipRowListeners: true });
+      based.deleteRow('users', USER_ID_1, { skipRowListeners: true });
+
+      expect(onRowAddedOrUpdated).not.toHaveBeenCalled();
+      expect(onRowRemoved).not.toHaveBeenCalled();
     });
   });
 
