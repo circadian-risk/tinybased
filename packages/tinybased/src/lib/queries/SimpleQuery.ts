@@ -1,5 +1,5 @@
 import { Queries } from 'tinybase/cjs/queries';
-import { OnlyStringKeys, QueryOptions, Table } from '../types';
+import { DeepPrettify, OnlyStringKeys, QueryOptions, Table } from '../types';
 
 export class SimpleQuery<
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -11,7 +11,7 @@ export class SimpleQuery<
     public readonly queryId: string
   ) {}
 
-  public getResultRowIds() {
+  public getResultRowIds(): string[] {
     return this.queries.getResultRowIds(this.queryId);
   }
 
@@ -26,10 +26,9 @@ export class SimpleQuery<
     );
   }
 
-  public getResultTable(): Record<string, Pick<TTable, TCells>> {
-    return this.queries.getResultTable(this.queryId) as Record<
-      string,
-      Pick<TTable, TCells>
+  public getResultTable(): DeepPrettify<Record<string, Pick<TTable, TCells>>> {
+    return this.queries.getResultTable(this.queryId) as DeepPrettify<
+      Record<string, Pick<TTable, TCells>>
     >;
   }
 }

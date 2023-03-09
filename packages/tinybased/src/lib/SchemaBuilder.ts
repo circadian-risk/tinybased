@@ -2,6 +2,7 @@
 import { TableBuilder } from './TableBuilder';
 import { TinyBased } from './tinybased';
 import {
+  DeepPrettify,
   OnlyStringKeys,
   PersisterSchema,
   RelationshipDefinition,
@@ -88,7 +89,7 @@ export class SchemaBuilder<
             keyBy: tableBuilder.keys,
           },
         ])
-      ) as PersisterSchema<TBSchema>;
+      ) as DeepPrettify<PersisterSchema<TBSchema>>;
 
       await Promise.all(
         Array.from(this.persisters).map((persister) =>
