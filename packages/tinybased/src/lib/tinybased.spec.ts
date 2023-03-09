@@ -366,11 +366,22 @@ describe('tinybased', () => {
       }
     });
 
+    const basedSchema = new SchemaBuilder()
+      .addTable(usersTable)
+      .addTable(
+        new TableBuilder('notes')
+          .add('id', 'string')
+          .add('userId', 'string')
+          .addOptional('text', 'string')
+          .keyBy(['id', 'userId'])
+      );
+
     const TestPersister = (
       databaseName: string
-    ): SchemaPersister<InferSchema<typeof baseBuilder>> => ({
-      onInit: async () => {
+    ): SchemaPersister<InferSchema<typeof basedSchema>> => ({
+      onInit: async (schema) => {
         mockStorage['__databaseName'] = databaseName;
+        mockStorage['__schema'] = schema;
       },
       getTable: async (tableName) => {
         return mockStorage[tableName] || [];
@@ -384,18 +395,35 @@ describe('tinybased', () => {
       },
     });
 
-    const basedSchema = new SchemaBuilder()
-      .addTable(usersTable)
-      .addPersister(TestPersister('test_db'));
+    basedSchema.addPersister(TestPersister('test_db'));
 
     beforeEach(() => {
       mockStorage = {};
       onRowAddedOrUpdated.mockClear();
     });
 
-    it('calls onInit on build', async () => {
+    it('calls onInit on build and can access schema', async () => {
       await basedSchema.build();
-      expect(mockStorage['__databaseName']).toBe('test_db');
+      expect(mockStorage['__databaseName']).toEqual('test_db');
+      expect(mockStorage['__schema']).toEqual({
+        users: {
+          cells: [
+            { name: 'id', type: 'string' },
+            { name: 'name', type: 'string' },
+            { name: 'age', type: 'number' },
+            { name: 'isAdmin', type: 'boolean' },
+          ],
+          keyBy: ['id'],
+        },
+        notes: {
+          cells: [
+            { name: 'id', type: 'string' },
+            { name: 'userId', type: 'string' },
+            { name: 'text', type: 'string', optional: true }, // optional
+          ],
+          keyBy: ['id', 'userId'], // composite key
+        },
+      });
     });
 
     it('hydrates from persister', async () => {

@@ -3,6 +3,7 @@ import { TableBuilder } from './TableBuilder';
 import { TinyBased } from './tinybased';
 import {
   OnlyStringKeys,
+  PersisterSchema,
   RelationshipDefinition,
   RowChangeHandler,
   SchemaHydrator,
@@ -78,10 +79,23 @@ export class SchemaBuilder<
 
     // Init persisters
 
-    await Promise.all(
-      Array.from(this.persisters).map((persister) => persister.onInit())
-    );
+    if (this.persisters.size > 0) {
+      const tableSchemas = Object.fromEntries(
+        Array.from(this.tables.entries()).map(([tableName, tableBuilder]) => [
+          tableName,
+          {
+            cells: tableBuilder.cells,
+            keyBy: tableBuilder.keys,
+          },
+        ])
+      ) as PersisterSchema<TBSchema>;
 
+      await Promise.all(
+        Array.from(this.persisters).map((persister) =>
+          persister.onInit(tableSchemas)
+        )
+      );
+    }
     // Hydrate tables
 
     Object.entries(this.hydrators).forEach((hydrator) => {

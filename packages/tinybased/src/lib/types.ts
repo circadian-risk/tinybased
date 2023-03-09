@@ -1,4 +1,5 @@
 import { SchemaBuilder } from './SchemaBuilder';
+import { CellSchema } from './TableBuilder';
 
 export type Cell = string | number | boolean;
 export type Table = Record<string, Cell>;
@@ -20,8 +21,15 @@ export type SchemaHydrator<TBSchema extends TinyBaseSchema> = {
     : never;
 }[keyof TBSchema];
 
+export type PersisterSchema<TBSchema extends TinyBaseSchema> = {
+  [TTableName in keyof TBSchema]: {
+    cells: CellSchema[];
+    keyBy: string[];
+  };
+};
+
 export type SchemaPersister<TBSchema extends TinyBaseSchema> = {
-  onInit: () => Promise<void> | void;
+  onInit: (schema: PersisterSchema<TBSchema>) => Promise<void> | void;
   getTable: <TTableName extends keyof TBSchema>(
     tableName: TTableName
   ) => Promise<TBSchema[TTableName][]> | TBSchema[TTableName][];
