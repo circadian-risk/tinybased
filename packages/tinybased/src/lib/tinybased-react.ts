@@ -5,10 +5,17 @@ import {
   useRow as tbUseRow,
   useCell as tbUseCell,
   useResultSortedRowIds,
+  useResultRow,
 } from 'tinybase/cjs/ui-react';
-import { SimpleQuery } from './queries';
+import { SimpleAggregateQuery, SimpleQuery } from './queries';
 import { TinyBased } from './tinybased';
-import { OnlyStringKeys, QueryOptions, Table, TinyBaseSchema } from './types';
+import {
+  Aggregations,
+  OnlyStringKeys,
+  QueryOptions,
+  Table,
+  TinyBaseSchema,
+} from './types';
 
 export const useSimpleQueryResultTable = <
   TTable extends Table = {},
@@ -21,6 +28,12 @@ export const useSimpleQueryResultTable = <
     Pick<TTable, TCells>
   >;
 };
+
+export function useSimpleAggregateResult<TAggregation extends Aggregations>(
+  query: SimpleAggregateQuery<TAggregation>
+): { [key in TAggregation]?: number } {
+  return useResultRow(query.queryId, '0', query.queries) as any;
+}
 
 export function useSimpleQueryResultIds(query: SimpleQuery) {
   return useResultRowIds(query.queryId, query.queries);
