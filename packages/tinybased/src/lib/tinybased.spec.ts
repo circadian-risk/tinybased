@@ -23,6 +23,22 @@ const exampleNote = {
 const baseBuilder = new SchemaBuilder().addTable(usersTable);
 
 describe('tinybased', () => {
+  it('should provide a typesafe wrapper for getTable', async () => {
+    const based = await baseBuilder.build();
+    based.setRow('users', '1', exampleUser);
+
+    const table = based.getTable('users');
+    expect(table).toEqual({
+      '1': exampleUser
+    })
+
+    expectTypeOf(table).toEqualTypeOf<
+      Record<
+        string,
+        { id: string; name: string; age: number; isAdmin: boolean }
+      >
+    >();
+  });
   it('should handle type safe rows and cells', async () => {
     const based = await baseBuilder.build();
     based.setRow('users', '1', exampleUser);
