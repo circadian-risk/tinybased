@@ -15,7 +15,7 @@ import {
   Prettify,
   RelationshipDefinition,
   RowChangeHandler,
-  SchemaHydrators,
+  SchemaHydrator,
   TinyBaseSchema,
 } from './types';
 import keyBy from 'lodash/keyBy';
@@ -23,11 +23,6 @@ import { TableBuilder } from './TableBuilder';
 
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
-
-export type TinyBasedOptions<TBSchema extends TinyBaseSchema = {}> = {
-  rowAddedOrUpdatedHandler?: RowChangeHandler<TBSchema>;
-  rowRemovedHandler?: RowChangeHandler<TBSchema>;
-};
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 export class TinyBased<
@@ -38,15 +33,18 @@ export class TinyBased<
   public readonly metrics: Metrics;
   public readonly relationships: Relationships;
   public readonly queries: Queries;
+  public readonly events = {
+    onRowAddedOrUpdated: new Set<RowChangeHandler<TBSchema>>(),
+    onRowRemoved: new Set<RowChangeHandler<TBSchema>>(),
+  } as const;
+  public readonly hydrators = new Set<SchemaHydrator<TBSchema>>();
 
   /** It is highly recommended that you do not call this constructor directly unless you know exactly what you're doing.
    * Instead, use the SchemaBuilder class to build your schema and then call .build() to receive an instance of this class
    */
   constructor(
     private readonly tables: Map<string, TableBuilder<any, any>>,
-    relationshipDefs: RelationshipDefinition[] = [],
-    private readonly hydrators: SchemaHydrators<TBSchema> = {} as SchemaHydrators<TBSchema>,
-    private readonly options: TinyBasedOptions<TBSchema> = {}
+    relationshipDefs: RelationshipDefinition[] = []
   ) {
     this.store = createStore();
     this.metrics = createMetrics(this.store);
@@ -76,31 +74,35 @@ export class TinyBased<
    */
   public init() {
     if (
-      this.options.rowAddedOrUpdatedHandler ||
-      this.options.rowAddedOrUpdatedHandler
+      this.events.onRowAddedOrUpdated.size > 0 ||
+      this.events.onRowRemoved.size > 0
     ) {
       this.store.addRowListener(null, null, (store, table, rowId) => {
         if (store.hasRow(table, rowId)) {
           const row = store.getRow(table, rowId);
-          this.options.rowAddedOrUpdatedHandler?.(table, rowId, row);
+          this.events.onRowAddedOrUpdated?.forEach((handler) =>
+            handler(table, rowId, row)
+          );
         } else {
-          this.options.rowRemovedHandler?.(table, rowId);
+          this.events.onRowRemoved?.forEach((handler) => handler(table, rowId));
         }
       });
     }
   }
 
   public async hydrate() {
-    await Promise.all(
-      Object.entries(this.hydrators).map(async ([table, hydrator]) => {
-        const entries = await hydrator();
-        const tableKeys = this.tables.get(table)?.keys ?? [];
-        this.store.setTable(
-          table,
-          keyBy(entries, (e) => `${tableKeys.map((k) => e[k]).join('::')}`)
-        );
-      })
-    );
+    if (this.hydrators.size > 0) {
+      await Promise.all(
+        Array.from(this.hydrators).map(async ([table, hydrator]) => {
+          const entries = await hydrator();
+          const tableKeys = this.tables.get(table)?.keys ?? [];
+          this.store.setTable(
+            table,
+            keyBy(entries, (e) => `${tableKeys.map((k) => e[k]).join('::')}`)
+          );
+        })
+      );
+    }
   }
 
   simpleQuery<TTable extends keyof TBSchema>(
