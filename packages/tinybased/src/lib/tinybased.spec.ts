@@ -29,8 +29,8 @@ describe('tinybased', () => {
 
     const table = based.getTable('users');
     expect(table).toEqual({
-      '1': exampleUser
-    })
+      '1': exampleUser,
+    });
 
     expectTypeOf(table).toEqualTypeOf<
       Record<
