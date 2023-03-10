@@ -41,8 +41,8 @@ export class SimpleQueryBuilder<
    * @param cell
    * @param aggregateOperation
    */
-  aggregate<TCell extends keyof TTable, TAggregation extends Aggregations>(
-    cell: TCell,
+  aggregate<TAggregation extends Aggregations>(
+    cell: TCells,
     aggregateOperation: TAggregation
   ) {
     const queryId = this.internalBuild({
