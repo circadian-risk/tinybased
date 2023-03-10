@@ -4,6 +4,7 @@ import {
   useResultRowIds,
   useRow as tbUseRow,
   useCell as tbUseCell,
+  useRowIds as tbUseRowIds,
   useResultSortedRowIds,
   useResultRow,
 } from 'tinybase/cjs/ui-react';
@@ -64,6 +65,8 @@ export type TinyBasedReactHooks<TBSchema extends TinyBaseSchema = {}> = {
     cellId: TCell
   ) => TBSchema[TTable][TCell];
 
+  useRowIds: <TTable extends keyof TBSchema>(table: TTable) => string[];
+
   useRow: <TTable extends keyof TBSchema>(
     table: TTable,
     rowId: string
@@ -101,8 +104,13 @@ export function makeTinybasedHooks<
     return tbUseRow(table as string, rowId, store) as TBSchema[TTable];
   };
 
+  const useRowIds = <TTable extends keyof TBSchema>(table: TTable) => {
+    return tbUseRowIds(table as string) as string[];
+  };
+
   return {
     useCell,
+    useRowIds,
     useRow,
   };
 }
