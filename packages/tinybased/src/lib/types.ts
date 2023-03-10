@@ -1,5 +1,6 @@
 import { SchemaBuilder } from './SchemaBuilder';
 import { CellSchema } from './TableBuilder';
+import { TinyBased } from './tinybased';
 
 export type Cell = string | number | boolean;
 export type Table = Record<string, Cell>;
@@ -9,6 +10,10 @@ export type TableNames<TBSchema extends TinyBaseSchema> =
 
 export type InferSchema<SB> = SB extends SchemaBuilder<infer S, any>
   ? S
+  : never;
+
+export type InferTinyBased<SB> = SB extends SchemaBuilder<infer S, infer R>
+  ? TinyBased<S, R>
   : never;
 
 export type SchemaHydrators<TBSchema extends TinyBaseSchema> = {
