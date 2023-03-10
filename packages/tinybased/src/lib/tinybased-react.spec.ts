@@ -10,6 +10,7 @@ import {
   useSimpleQueryResultTable,
   TinyBasedReactHooks,
   useSimpleQuerySortedResultIds,
+  useSimpleAggregateResult,
 } from './tinybased-react';
 
 import { renderHook, act } from '@testing-library/react-hooks';
@@ -118,6 +119,33 @@ describe('Tinybased React', () => {
         expect(result.current).toEqual({
           noteId1: { text: 'Hello TinyBased' },
           noteId2: { text: 'TinyBased' },
+        });
+      });
+    });
+    describe('simple aggregation queries', () => {
+      it('handles the results of a simple aggregation query', () => {
+        const query = based
+          .simpleQuery('notes')
+          .where('userId', 'user1')
+          .select('userId')
+          .aggregate('userId', 'count');
+
+        const { result } = renderHook(() => useSimpleAggregateResult(query));
+
+        expect(result.current).toEqual({
+          count: 2,
+        });
+
+        expectTypeOf(result.current).toEqualTypeOf<{ count?: number }>();
+
+        based.setRow('notes', 'testNote', {
+          id: 'testNote',
+          userId: 'user1',
+          text: 'some text',
+        });
+
+        expect(result.current).toEqual({
+          count: 3,
         });
       });
     });

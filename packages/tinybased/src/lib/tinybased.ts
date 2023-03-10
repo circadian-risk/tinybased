@@ -11,6 +11,8 @@ import {
 } from 'tinybase/cjs';
 import { SimpleQueryBuilder } from './queries';
 import {
+  OnlyStringKeys,
+  Prettify,
   RelationshipDefinition,
   RowChangeHandler,
   SchemaHydrator,
@@ -152,6 +154,13 @@ export class TinyBased<
 
   deleteRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
     return this.store.delRow(table as string, rowId);
+  }
+
+  getTable<TTable extends OnlyStringKeys<TBSchema>>(tableName: TTable) {
+    return this.store.getTable(tableName) as Record<
+      string,
+      Prettify<TBSchema[TTable]>
+    >;
   }
 
   getCell<TTable extends keyof TBSchema, TCell extends keyof TBSchema[TTable]>(
