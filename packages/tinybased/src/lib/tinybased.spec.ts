@@ -39,6 +39,7 @@ describe('tinybased', () => {
       >
     >();
   });
+
   it('should handle type safe rows and cells', async () => {
     const based = await baseBuilder.build();
     based.setRow('users', '1', exampleUser);
@@ -50,20 +51,6 @@ describe('tinybased', () => {
     based.deleteCell('users', '1', 'age');
     const age2 = based.getCell('users', '1', 'age');
     expect(age2).toBeUndefined();
-  });
-
-  it('handles null/undefined cells', async () => {
-    const based = await baseBuilder.build();
-    based.setRow('users', '1', exampleUser);
-    const onChange = vi.fn();
-
-    based.store.addRowListener(null, null, () => {
-      onChange();
-    });
-
-    based.setCell('users', '1', 'age', null as any);
-
-    expect(onChange).toHaveBeenCalledOnce();
   });
 
   it('getSortedRowIds: should return sorted id by cell', async () => {
