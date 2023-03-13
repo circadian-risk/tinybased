@@ -5,6 +5,8 @@ import {
   useRow as tbUseRow,
   useCell as tbUseCell,
   useRowIds as tbUseRowIds,
+  useLocalRowIds as tbUseLocalRowIds,
+  useRemoteRowId as tbUseRemoteRowId,
   useResultSortedRowIds,
   useResultRow,
 } from 'tinybase/cjs/ui-react';
@@ -12,10 +14,11 @@ import { SimpleAggregateQuery, SimpleQuery } from './queries';
 import { TinyBased } from './tinybased';
 import {
   Aggregations,
+  InferRelationShip,
+  InferSchema,
   OnlyStringKeys,
   QueryOptions,
   Table,
-  TinyBaseSchema,
 } from './types';
 
 export const useSimpleQueryResultTable = <
@@ -55,7 +58,11 @@ export function useSimpleQuerySortedResultIds<
   );
 }
 
-export type TinyBasedReactHooks<TBSchema extends TinyBaseSchema = {}> = {
+export type TinyBasedReactHooks<
+  TB extends TinyBased<any, any>,
+  TBSchema = InferSchema<TB>,
+  TRelationships = InferRelationShip<TB>
+> = {
   useCell: <
     TTable extends keyof TBSchema,
     TCell extends keyof TBSchema[TTable]
@@ -71,14 +78,20 @@ export type TinyBasedReactHooks<TBSchema extends TinyBaseSchema = {}> = {
     table: TTable,
     rowId: string
   ) => TBSchema[TTable];
+
+  useLocalRowIds: (relationshipName: TRelationships, rowId: string) => string[];
+
+  useRemoteRowId: (
+    relationshipName: TRelationships,
+    rowId: string
+  ) => string | undefined;
 };
 
 export function makeTinybasedHooks<
-  TBSchema extends TinyBaseSchema = {},
-  TRelationships extends string = never
->(
-  tinyBased: TinyBased<TBSchema, TRelationships>
-): TinyBasedReactHooks<TBSchema> {
+  TB extends TinyBased<any, any>,
+  TBSchema = InferSchema<TB>,
+  TRelationships = InferRelationShip<TB>
+>(tinyBased: TB) {
   const store = tinyBased.store;
 
   const useCell = <
@@ -105,12 +118,30 @@ export function makeTinybasedHooks<
   };
 
   const useRowIds = <TTable extends keyof TBSchema>(table: TTable) => {
-    return tbUseRowIds(table as string) as string[];
+    return tbUseRowIds(table as string, store) as string[];
+  };
+
+  const useLocalRowIds = (relationshipName: TRelationships, rowId: string) => {
+    return tbUseLocalRowIds(
+      relationshipName as string,
+      rowId,
+      tinyBased.relationships
+    ) as string[];
+  };
+
+  const useRemoteRowId = (relationshipName: TRelationships, rowId: string) => {
+    return tbUseRemoteRowId(
+      relationshipName as string,
+      rowId,
+      tinyBased.relationships
+    ) as string;
   };
 
   return {
     useCell,
     useRowIds,
     useRow,
-  };
+    useLocalRowIds,
+    useRemoteRowId,
+  } as TinyBasedReactHooks<TB>;
 }

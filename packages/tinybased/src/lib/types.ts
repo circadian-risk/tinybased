@@ -8,8 +8,22 @@ export type TinyBaseSchema = Record<string, Table>;
 export type TableNames<TBSchema extends TinyBaseSchema> =
   OnlyStringKeys<TBSchema>;
 
-export type InferSchema<SB> = SB extends SchemaBuilder<infer S, any>
+export type InferSchema<T> = T extends SchemaBuilder<infer S, any>
   ? S
+  : T extends TinyBased<infer S, any>
+  ? S
+  : never;
+
+export type InferTableNames<T> = T extends SchemaBuilder<any, any>
+  ? TableNames<InferSchema<T>>
+  : T extends TinyBased<any, any>
+  ? TableNames<InferSchema<T>>
+  : never;
+
+export type InferRelationShip<T> = T extends SchemaBuilder<any, infer R>
+  ? R
+  : T extends TinyBased<any, infer R>
+  ? R
   : never;
 
 export type InferTinyBased<SB> = SB extends SchemaBuilder<infer S, infer R>

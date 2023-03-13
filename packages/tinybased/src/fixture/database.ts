@@ -65,6 +65,7 @@ export async function makeTinyBasedTestFixture() {
       users: () => Promise.resolve([user1, user2]),
       notes: () => Promise.resolve([note1, note2, note3]),
     })
+    .defineRelationship('userNotes', 'notes', 'users', 'userId')
     .build();
 
   return tinyBasedSample;
