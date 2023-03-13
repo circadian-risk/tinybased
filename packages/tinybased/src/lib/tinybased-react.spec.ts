@@ -1,6 +1,6 @@
 import {
   makeTinyBasedTestFixture,
-  Schema,
+  NOTE_ID,
   USER_ID_1,
   USER_ID_2,
 } from '../fixture/database';
@@ -16,14 +16,14 @@ import {
 import { renderHook, act } from '@testing-library/react-hooks';
 
 describe('Tinybased React', () => {
-  let hooks: TinyBasedReactHooks<Schema>;
   let based: Awaited<ReturnType<typeof makeTinyBasedTestFixture>>;
+  let hooks: TinyBasedReactHooks<typeof based>;
   beforeAll(async () => {
     based = await makeTinyBasedTestFixture();
     hooks = makeTinybasedHooks(based);
   });
   describe('makeHooks', () => {
-    test('useCell', () => {
+    it('useCell', () => {
       const { result } = renderHook(() =>
         hooks.useCell('users', 'user2', 'name')
       );
@@ -36,7 +36,7 @@ describe('Tinybased React', () => {
       expect(result.current).toEqual('Bob Ross');
     });
 
-    test('useRow', () => {
+    it('useRow', () => {
       const { result } = renderHook(() => hooks.useRow('users', 'user1'));
       expect(result.current).toEqual({
         id: 'user1',
@@ -53,6 +53,44 @@ describe('Tinybased React', () => {
         age: 33,
         isAdmin: true,
       });
+    });
+
+    it('useRowIds', () => {
+      const { result } = renderHook(() => hooks.useRowIds('users'));
+      expect(result.current).toEqual([USER_ID_1, USER_ID_2]);
+
+      const USER_ID_3 = 'user3';
+      based.setRow('users', USER_ID_3, {
+        age: 100,
+        isAdmin: false,
+        name: 'Zach',
+        id: USER_ID_3,
+      });
+
+      expect(result.current).toEqual([USER_ID_1, USER_ID_2, USER_ID_3]);
+    });
+
+    it('useLocalRowIds', () => {
+      const { result } = renderHook(() =>
+        hooks.useLocalRowIds('userNotes', USER_ID_1)
+      );
+
+      const expectedResults = based
+        .simpleQuery('notes')
+        .where('userId', USER_ID_1)
+        .select('id')
+        .build()
+        .getResultRowIds();
+
+      expect(result.current).toEqual(expectedResults);
+    });
+
+    it('useRemoteRowId', () => {
+      const { result } = renderHook(() =>
+        hooks.useRemoteRowId('userNotes', NOTE_ID)
+      );
+
+      expect(result.current).toEqual(based.getCell('notes', NOTE_ID, 'userId'));
     });
   });
 
