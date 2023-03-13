@@ -76,8 +76,8 @@ describe('Simple proofs that demonstrate how TinyBase works under the hood', () 
 
       based.setRow('someTable', '1', {
         ...based.getRow('someTable', '1'),
-        trying_null: undefined,
-        trying_undefined: null as unknown as undefined,
+        trying_undefined: undefined,
+        trying_null: null as unknown as undefined,
       });
 
       // IMPORTANT:  When we set cells to undefined they are actually removed automatically from the row
