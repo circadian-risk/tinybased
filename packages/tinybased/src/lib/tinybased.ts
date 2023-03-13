@@ -120,7 +120,17 @@ export class TinyBased<
     rowId: string,
     row: TBSchema[TTable]
   ) {
-    this.store.setRow(table as string, rowId, row);
+    this.store.transaction(() => {
+      this.store.setRow(table as string, rowId, row);
+      Object.entries(row).forEach(([cellId, value]) => {
+        if (
+          value == undefined &&
+          this.store.hasCell(table as string, rowId, cellId)
+        ) {
+          this.store.delCell(table as string, rowId, cellId);
+        }
+      });
+    });
   }
 
   getRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {

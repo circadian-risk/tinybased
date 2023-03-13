@@ -119,6 +119,64 @@ describe('tinybased', () => {
     expectTypeOf(based.hasRow).parameter(1).toEqualTypeOf<string>();
   });
 
+  it('setRow: setting value of a cell null/undefined via setRow should trigger onChange event', async () => {
+    const onChange = vi.fn();
+    const nullCellEventListeners = vi.fn();
+    const undefinedCellEventListeners = vi.fn();
+    const neverSetCellEventListeners = vi.fn();
+    const onRowChangeEventListener = vi.fn();
+
+    const based = await new SchemaBuilder()
+      .addTable(
+        new TableBuilder('someTable')
+          .add('id', 'string')
+          .addOptional('trying_null', 'string')
+          .addOptional('trying_undefined', 'string')
+          .addOptional('never_set', 'string')
+      )
+      .onRowAddedOrUpdated(onChange)
+      .build();
+
+    based.store.addRowListener('someTable', null, onRowChangeEventListener);
+    based.store.addCellListener(
+      'someTable',
+      null,
+      'trying_null',
+      nullCellEventListeners
+    );
+    based.store.addCellListener(
+      'someTable',
+      null,
+      'trying_undefined',
+      undefinedCellEventListeners
+    );
+
+    based.setRow('someTable', '1', {
+      id: '1',
+      trying_null: 'initial',
+      trying_undefined: 'initial',
+      never_set: null as unknown as undefined,
+    });
+
+    based.setRow('someTable', '1', {
+      ...based.getRow('someTable', '1'),
+      trying_null: undefined,
+      trying_undefined: null as unknown as undefined,
+      never_set: undefined,
+    });
+
+    based.setRow('someTable', '1', {
+      ...based.getRow('someTable', '1'),
+      never_set: undefined,
+    });
+
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(nullCellEventListeners).toHaveBeenCalledTimes(2);
+    expect(onRowChangeEventListener).toHaveBeenCalledTimes(2);
+    expect(undefinedCellEventListeners).toHaveBeenCalledTimes(2);
+    expect(neverSetCellEventListeners).toHaveBeenCalledTimes(0);
+  });
+
   // TODO: extract common setup boilerplate
   describe('queries', () => {
     it('handles simple queries', async () => {
