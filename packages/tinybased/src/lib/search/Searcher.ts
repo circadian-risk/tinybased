@@ -42,7 +42,7 @@ export class Searcher<TSchema extends TinyBaseSchema = {}> {
   ): Promise<SearchResult<ObjectToCellStringType<TSchema[K]>>> {
     // Excessive stack depth comparing types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return search(this.indexes[index], params as any) as any;
+    return search(this.indexes[index], params);
   }
 
   public getByID<K extends OnlyStringKeys<TSchema>>(
