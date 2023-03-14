@@ -93,7 +93,7 @@ export class SchemaBuilder<
 
       await Promise.all(
         Array.from(this.persisters).map((persister) =>
-          persister.onInit(tableSchemas)
+          persister.onInit?.(tableSchemas)
         )
       );
     }
