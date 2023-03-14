@@ -3,54 +3,57 @@ import { SearchParams, SearchResult } from '@lyrasearch/lyra';
 
 import { useCallback, useEffect, useState } from 'react';
 import { useValue } from 'tinybase/cjs/ui-react';
-import { ObjectToCellStringType, TableBuilder } from '../TableBuilder';
+import { ObjectToCellStringType } from '../TableBuilder';
 import { TinyBased } from '../tinybased';
 import { OnlyStringKeys, TinyBaseSchema } from '../types';
-import { Searched } from './searched';
+import { SearcherBuilder } from './SearcherBuilder';
+import { Searcher } from './Searcher';
 
 const SEARCH_LAST_UPDATED_AT = (table: string | symbol | number) =>
-  `${String(table)}-last-updated-at`;
+  `__internal__tinybased__${String(table)}-last-updated-at`;
 
 /**
- * Generates a type-safe Searched instance and its corresponding `useSearch` hook for a fully
+ * Generates a type-safe Searcher instance and its corresponding `useSearch` hook for a fully
  * connected and reactive Full Text Search of an underlying `tinybased` dataset.
  */
-export const generateSearched = async <
+export const connectTinybasedSearcher = async <
   TBSchema extends TinyBaseSchema,
   TIndexes extends OnlyStringKeys<TBSchema>
 >(
   tinybased: TinyBased<TBSchema>,
   indexes: Array<TIndexes>
 ): Promise<{
-  searched: Searched<Pick<TBSchema, TIndexes>>;
+  searcher: Searcher<Pick<TBSchema, TIndexes>>;
   useSearch: <K extends TIndexes>(
     index: K,
     params: SearchParams<ObjectToCellStringType<TBSchema[K]>>
   ) => SearchResult<ObjectToCellStringType<TBSchema[K]>> | undefined;
 }> => {
-  // instantiate searched here
-  const searched = new Searched();
+  const searchBuilder = new SearcherBuilder();
 
   // for each table, addIndexedTable
-  const tables = new Map<TIndexes, TableBuilder<any, any>>();
   indexes.forEach((tableKeyToIndex) => {
     const tableBuilder = tinybased.tables.get(tableKeyToIndex);
     if (!tableBuilder)
-      throw Error(Searched.ERRORS.TABLE_NOT_IN_SCHEMA_BUILDER(tableKeyToIndex));
-    tables.set(tableKeyToIndex, tableBuilder);
+      throw Error(
+        SearcherBuilder.ERRORS.TABLE_NOT_IN_SCHEMA_BUILDER(tableKeyToIndex)
+      );
+    searchBuilder.addIndexedTable(tableBuilder);
   });
 
-  const searchedWithTables = searched.setTables(tables);
+  const searcher = (await searchBuilder.build()) as Searcher<
+    Pick<TBSchema, TIndexes>
+  >;
 
   // upsert handler
   tinybased.onRowAddedOrUpdated(async (table, rowId, entity) => {
     if (entity) {
-      const existing = await searchedWithTables.getByID(table as any, rowId);
+      const existing = await searcher.getByID(table as any, rowId);
       if (existing) {
-        searchedWithTables.remove(table as any, rowId);
+        await searcher.remove(table as any, rowId);
       }
       // TODO: We want to get the entity type type-safe
-      await searchedWithTables.insert(table as any, entity as any);
+      await searcher.insert(table as any, entity as any);
 
       tinybased.store.setValue(
         SEARCH_LAST_UPDATED_AT(table),
@@ -61,25 +64,23 @@ export const generateSearched = async <
 
   // removed handler
   tinybased.onRowRemoved(async (table, rowId, _entity) => {
-    await searchedWithTables.remove(table as any, rowId);
+    await searcher.remove(table as any, rowId);
     tinybased.store.setValue(
       SEARCH_LAST_UPDATED_AT(table),
       new Date().toISOString()
     );
   }, true);
 
-  await searchedWithTables.initialize();
-
   await Promise.all(
     indexes.map(async (index) => {
       const rows = Object.values(tinybased.getTable(index));
 
-      await searchedWithTables.insertBatch(index, rows);
+      await searcher.insertBatch(index as any, rows as any);
     })
   );
 
   /**
-   * Type-safe, reactive hook to execute `search` on the Searched instance of a Tinybased instance
+   * Type-safe, reactive hook to execute `search` on the Searcher instance of a Tinybased instance
    */
   const useSearch = <K extends TIndexes>(
     index: K,
@@ -98,9 +99,9 @@ export const generateSearched = async <
     >(undefined);
 
     const search = useCallback(async () => {
-      const res = await searchedWithTables.search(index, params as any);
+      const res = await searcher.search(index as any, params as any);
       setResult(res as any);
-    }, [searchedWithTables, JSON.stringify(params)]);
+    }, [searcher, JSON.stringify(params)]);
 
     useEffect(() => {
       search();
@@ -110,7 +111,7 @@ export const generateSearched = async <
   };
 
   return {
-    searched: searchedWithTables as Searched<Pick<TBSchema, TIndexes>>,
+    searcher: searcher as Searcher<Pick<TBSchema, TIndexes>>,
     useSearch,
   };
 };

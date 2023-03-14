@@ -1,4 +1,3 @@
-import { SearchParams, SearchResult } from '@lyrasearch/lyra';
 import { renderHook } from '@testing-library/react-hooks';
 import {
   notesTable,
@@ -14,47 +13,30 @@ import {
 } from '../../fixture/database';
 import { waitAMoment } from '../../testing/utils';
 import { SchemaBuilder } from '../SchemaBuilder';
-import { ObjectToCellStringType } from '../TableBuilder';
-import { InferSchema, OnlyStringKeys } from '../types';
-import { generateSearched } from './generateSearched';
+import { DeepPrettify, InferSchema } from '../types';
+import { connectTinybasedSearcher } from './tinybasedSearcher';
 
-const schemaBuilderTypeReference = () =>
-  new SchemaBuilder()
-    .addTable(usersTable)
-    .addTable(notesTable)
-    .defineHydrators({
-      users: () => Promise.resolve([USER_1, USER_2, USER_3, USER_4, USER_5]),
-      notes: () => Promise.resolve([NOTE_1, NOTE_2, NOTE_3]),
-    });
+const schemaBuilder = new SchemaBuilder()
+  .addTable(usersTable)
+  .addTable(notesTable)
+  .defineHydrators({
+    users: () => Promise.resolve([USER_1, USER_2, USER_3, USER_4, USER_5]),
+    notes: () => Promise.resolve([NOTE_1, NOTE_2, NOTE_3]),
+  });
 
-describe('Searched in react', () => {
-  let schemaBuilder!: ReturnType<typeof schemaBuilderTypeReference>;
+type Schema = DeepPrettify<InferSchema<typeof schemaBuilder>>;
+
+describe('Searcher in react', () => {
   let tb!: Awaited<ReturnType<(typeof schemaBuilder)['build']>>;
-
-  let useSearch!: <
-    K extends OnlyStringKeys<
-      InferSchema<ReturnType<typeof schemaBuilderTypeReference>>
-    >
-  >(
-    index: K,
-    params: SearchParams<
-      ObjectToCellStringType<
-        InferSchema<ReturnType<typeof schemaBuilderTypeReference>>[K]
-      >
-    >
-  ) =>
-    | SearchResult<
-        ObjectToCellStringType<
-          InferSchema<ReturnType<typeof schemaBuilderTypeReference>>[K]
-        >
-      >
-    | undefined;
+  let builtSearch!: Awaited<
+    ReturnType<typeof connectTinybasedSearcher<Schema, 'users' | 'notes'>>
+  >;
+  let useSearch!: (typeof builtSearch)['useSearch'];
 
   beforeEach(async () => {
-    tb = await schemaBuilderTypeReference().build();
-
-    const res = await generateSearched(tb, ['users', 'notes']);
-    useSearch = res.useSearch;
+    tb = await schemaBuilder.build();
+    builtSearch = await connectTinybasedSearcher(tb, ['users', 'notes']);
+    useSearch = builtSearch.useSearch;
   });
 
   describe('useSearch', () => {

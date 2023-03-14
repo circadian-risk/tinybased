@@ -1,5 +1,6 @@
 import { notesTable, UserRow, usersTable } from '../../fixture/database';
-import { Searched } from './searched';
+import { Searcher } from './Searcher';
+import { SearcherBuilder } from './SearcherBuilder';
 
 const USER_1: UserRow = {
   id: 'abc123',
@@ -26,58 +27,46 @@ const USER_4: UserRow = {
   isAdmin: true,
 };
 
-const searchedTypeReference = () =>
-  new Searched().addIndexedTable(usersTable).addIndexedTable(notesTable);
+const searchBuilder = new SearcherBuilder()
+  .addIndexedTable(usersTable)
+  .addIndexedTable(notesTable);
 
-describe('Searched', () => {
+type SearcherInstance = Awaited<ReturnType<(typeof searchBuilder)['build']>>;
+
+describe('Searcher', () => {
   describe('initialization', () => {
     it(`Throws if no tables are defined`, async () => {
-      const searched = new Searched();
-      await expect(searched.initialize()).rejects.toThrow(
-        Searched.ERRORS.NO_TABLES_DEFINED
+      const searcher = new SearcherBuilder();
+      await expect(searcher.build()).rejects.toThrow(
+        SearcherBuilder.ERRORS.NO_TABLES_DEFINED
       );
     });
 
-    it('Returns an initialized Searched instance', async () => {
-      const searched = await new Searched()
-        .addIndexedTable(usersTable)
-        .addIndexedTable(notesTable)
-        .initialize();
+    it('Returns an initialized Searcher instance', async () => {
+      const searcher = await searchBuilder.build();
 
-      expect(searched).toBeInstanceOf(Searched);
-      expect(searched.tables.get('users')).toEqual(usersTable);
-      expect(searched.tables.get('notes')).toEqual(notesTable);
-    });
-
-    it('setTables can be used to set all tables', async () => {
-      const tablesMap = new Map()
-        .set('users', usersTable)
-        .set('notes', notesTable);
-      const searched = await new Searched().setTables(tablesMap).initialize();
-      expect(searched).toBeInstanceOf(Searched);
-      expect(searched.tables.get('users')).toEqual(usersTable);
-      expect(searched.tables.get('notes')).toEqual(notesTable);
+      expect(searcher).toBeInstanceOf(Searcher);
     });
   });
 
   describe('operations', () => {
-    let searched!: ReturnType<typeof searchedTypeReference>;
+    let searcher!: SearcherInstance;
 
     beforeEach(async () => {
-      searched = await searchedTypeReference().initialize();
+      searcher = await searchBuilder.build();
     });
 
     describe('insertion', () => {
       it('Can insert a single record', async () => {
-        const res = await searched.insert('users', USER_1);
+        const res = await searcher.insert('users', USER_1);
         expect(res.id).toEqual(USER_1.id);
 
-        const { hits } = await searched.search('users', {
+        const { hits } = await searcher.search('users', {
           term: 'Mikey',
         });
         expect(hits[0].document).toBe(USER_1);
 
-        const { count } = await searched.search('users', {
+        const { count } = await searcher.search('users', {
           term: 'Shaggy',
         });
 
@@ -86,10 +75,10 @@ describe('Searched', () => {
 
       it('Can insert a batch of records', async () => {
         const batched = [USER_1, USER_2, USER_3];
-        await searched.insertBatch('users', batched);
+        await searcher.insertBatch('users', batched);
 
         for (const u of batched) {
-          const { hits } = await searched.search('users', {
+          const { hits } = await searcher.search('users', {
             term: u.name,
           });
           expect(hits[0].document).toBe(u);
@@ -99,11 +88,11 @@ describe('Searched', () => {
     describe('search', () => {
       beforeEach(async () => {
         const batched = [USER_1, USER_2, USER_3, USER_4];
-        await searched.insertBatch('users', batched);
+        await searcher.insertBatch('users', batched);
       });
       it('Can fuzzy match by specifying "exact" as false', async () => {
         // Both 'Jesse' and 'Jessa' are present and should be inexact matches for 'Jess'
-        const { count, hits } = await searched.search('users', {
+        const { count, hits } = await searcher.search('users', {
           term: 'Jess',
           exact: false,
         });
@@ -117,7 +106,7 @@ describe('Searched', () => {
         );
       });
       it('can use "where" to filter results with type-safety', async () => {
-        const { hits, count } = await searched.search('users', {
+        const { hits, count } = await searcher.search('users', {
           term: 'Jess',
           where: {
             age: {
@@ -130,7 +119,7 @@ describe('Searched', () => {
         expect(hits[0].document).toEqual(USER_2);
       });
       it('can use "limit" to limit the number of results', async () => {
-        const { count, hits } = await searched.search('users', {
+        const { count, hits } = await searcher.search('users', {
           term: 'Jess',
           limit: 1,
         });
@@ -145,20 +134,20 @@ describe('Searched', () => {
     describe('removal', () => {
       beforeEach(async () => {
         const batched = [USER_1, USER_2, USER_3, USER_4];
-        await searched.insertBatch('users', batched);
+        await searcher.insertBatch('users', batched);
       });
 
       it('can remove items from the index', async () => {
-        const { hits } = await searched.search('users', { term: USER_4.name });
+        const { hits } = await searcher.search('users', { term: USER_4.name });
         expect(hits).toEqual(
           expect.arrayContaining([
             expect.objectContaining({ document: USER_4 }),
           ])
         );
 
-        expect(searched.remove('users', USER_4.id)).resolves.toEqual(true);
+        expect(searcher.remove('users', USER_4.id)).resolves.toEqual(true);
 
-        const { count } = await searched.search('users', { term: USER_4.name });
+        const { count } = await searcher.search('users', { term: USER_4.name });
         expect(count).toBe(0);
       });
     });

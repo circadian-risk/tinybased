@@ -1,3 +1,4 @@
+import { connectTinybasedSearcher } from '.';
 import {
   notesTable,
   NOTE_1,
@@ -8,19 +9,19 @@ import {
   USER_2,
 } from '../../fixture/database';
 import { SchemaBuilder } from '../SchemaBuilder';
-import { generateSearched, Searched } from '.';
+import { SearcherBuilder } from './SearcherBuilder';
 
-const schemaBuilderTypeReference = () =>
-  new SchemaBuilder()
-    .addTable(usersTable)
-    .addTable(notesTable)
-    .defineHydrators({
-      users: () => Promise.resolve([USER_1, USER_2]),
-      notes: () => Promise.resolve([NOTE_1, NOTE_2, NOTE_3]),
-    });
+const schemaBuilder = new SchemaBuilder()
+  .addTable(usersTable)
+  .addTable(notesTable)
+  .defineHydrators({
+    users: () => Promise.resolve([USER_1, USER_2]),
+    notes: () => Promise.resolve([NOTE_1, NOTE_2, NOTE_3]),
+  });
 
-const searchedTypeReference = () =>
-  new Searched().addIndexedTable(usersTable).addIndexedTable(notesTable);
+const searchBuilder = new SearcherBuilder()
+  .addIndexedTable(usersTable)
+  .addIndexedTable(notesTable);
 
 const SCOOB = {
   age: 99,
@@ -29,22 +30,20 @@ const SCOOB = {
   name: 'Scoob',
 };
 
-describe('Linking Searched to a tinybased (hydration, row add/update/remove)', () => {
-  let schemaBuilder!: ReturnType<typeof schemaBuilderTypeReference>;
-  let searched!: ReturnType<typeof searchedTypeReference>;
+describe('Linking Searcher to a tinybased (hydration, row add/update/remove)', () => {
+  let searcher!: Awaited<ReturnType<(typeof searchBuilder)['build']>>;
   let tb!: Awaited<ReturnType<(typeof schemaBuilder)['build']>>;
 
   beforeEach(async () => {
-    schemaBuilder = schemaBuilderTypeReference();
     tb = await schemaBuilder.build();
 
-    const generated = await generateSearched(tb, ['users', 'notes']);
-    searched = generated.searched;
+    const generated = await connectTinybasedSearcher(tb, ['users', 'notes']);
+    searcher = generated.searcher;
   });
 
   it('immediately hydrates the search index for specified tables', async () => {
     // Index should be populated and return resultes from hydration
-    const { hits: user1Hits } = await searched.search('users', {
+    const { hits: user1Hits } = await searcher.search('users', {
       term: USER_1.name,
     });
     expect(user1Hits[0].document).toEqual(USER_1);
@@ -56,7 +55,7 @@ describe('Linking Searched to a tinybased (hydration, row add/update/remove)', (
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    const { hits: scoobHit } = await searched.search('users', {
+    const { hits: scoobHit } = await searcher.search('users', {
       term: 'Scoob',
     });
 
@@ -72,7 +71,7 @@ describe('Linking Searched to a tinybased (hydration, row add/update/remove)', (
 
     await new Promise((resolve) => setTimeout(resolve, 10));
 
-    const { count, hits: scoobEditHit } = await searched.search('users', {
+    const { count, hits: scoobEditHit } = await searcher.search('users', {
       term: SCOOB.name,
     });
 
@@ -84,7 +83,7 @@ describe('Linking Searched to a tinybased (hydration, row add/update/remove)', (
 
   it('deletions are automatically removedc from the search index', async () => {
     // Assert that record is available for search
-    const { count: beforeCount } = await searched.search('users', {
+    const { count: beforeCount } = await searcher.search('users', {
       term: USER_1.name,
     });
 
@@ -93,7 +92,7 @@ describe('Linking Searched to a tinybased (hydration, row add/update/remove)', (
     tb.deleteRow('users', USER_1.id);
 
     // Assert that record is removed
-    const { count: afterCount } = await searched.search('users', {
+    const { count: afterCount } = await searcher.search('users', {
       term: USER_1.name,
     });
 

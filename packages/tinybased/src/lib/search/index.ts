@@ -1,2 +1,3 @@
-export * from './searched';
-export * from './generateSearched';
+export * from './Searcher';
+export * from './tinybasedSearcher';
+export * from './SearcherBuilder';
