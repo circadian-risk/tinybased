@@ -53,7 +53,7 @@ export const connectTinybasedSearcher = async <
         await searcher.remove(table as any, rowId);
       }
       // TODO: We want to get the entity type type-safe
-      await searcher.insert(table as any, entity as any);
+      await searcher.insert(table as any, entity);
 
       tinybased.store.setValue(
         SEARCH_LAST_UPDATED_AT(table),
@@ -99,8 +99,8 @@ export const connectTinybasedSearcher = async <
     >(undefined);
 
     const search = useCallback(async () => {
-      const res = await searcher.search(index as any, params as any);
-      setResult(res as any);
+      const res = await searcher.search(index as any, params);
+      setResult(res);
     }, [searcher, JSON.stringify(params)]);
 
     useEffect(() => {

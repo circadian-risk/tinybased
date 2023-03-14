@@ -1,3 +1,3 @@
 export * from './Searcher';
-export * from './tinybasedSearcher';
+export * from './connectTinybasedSearcher';
 export * from './SearcherBuilder';

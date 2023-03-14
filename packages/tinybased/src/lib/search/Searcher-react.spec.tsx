@@ -14,7 +14,7 @@ import {
 import { waitAMoment } from '../../testing/utils';
 import { SchemaBuilder } from '../SchemaBuilder';
 import { DeepPrettify, InferSchema } from '../types';
-import { connectTinybasedSearcher } from './tinybasedSearcher';
+import { connectTinybasedSearcher } from './connectTinybasedSearcher';
 
 const schemaBuilder = new SchemaBuilder()
   .addTable(usersTable)
