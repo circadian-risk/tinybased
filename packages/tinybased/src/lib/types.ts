@@ -8,21 +8,21 @@ export type TinyBaseSchema = Record<string, Table>;
 export type TableNames<TBSchema extends TinyBaseSchema> =
   OnlyStringKeys<TBSchema>;
 
-export type InferSchema<T> = T extends SchemaBuilder<infer S, any>
+export type InferSchema<T> = T extends SchemaBuilder<infer S, infer _R>
   ? S
-  : T extends TinyBased<infer S, any>
+  : T extends TinyBased<infer S, infer _R>
   ? S
   : never;
 
-export type InferTableNames<T> = T extends SchemaBuilder<any, any>
+export type InferTableNames<T> = T extends SchemaBuilder<infer _S, infer _R>
   ? TableNames<InferSchema<T>>
-  : T extends TinyBased<any, any>
+  : T extends TinyBased<infer _S, infer _R>
   ? TableNames<InferSchema<T>>
   : never;
 
-export type InferRelationShip<T> = T extends SchemaBuilder<any, infer R>
+export type InferRelationShip<T> = T extends SchemaBuilder<infer _S, infer R>
   ? R
-  : T extends TinyBased<any, infer R>
+  : T extends TinyBased<infer _S, infer R>
   ? R
   : never;
 
@@ -53,7 +53,7 @@ export type TableDefs<TBSchema extends TinyBaseSchema> = {
 };
 
 export type SchemaPersister<TBSchema extends TinyBaseSchema> = {
-  onInit: (schema: DeepPrettify<TableDefs<TBSchema>>) => Promise<void> | void;
+  onInit?: (schema: DeepPrettify<TableDefs<TBSchema>>) => Promise<void> | void;
   getTable: <TTableName extends keyof TBSchema>(
     tableName: TTableName
   ) => Promise<TBSchema[TTableName][]> | TBSchema[TTableName][];
