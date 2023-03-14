@@ -1,7 +1,7 @@
-import { SchemaBuilder } from './SchemaBuilder';
 import { notesTable, usersTable } from '../fixture/database';
 import { InferSchema, SchemaPersister, Table } from './types';
 import { TableBuilder } from './TableBuilder';
+import { SchemaBuilder } from './SchemaBuilder';
 
 const USER_ID_1 = 'user1';
 const USER_ID_2 = 'user2';

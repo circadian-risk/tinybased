@@ -5,6 +5,7 @@ importers:
   .:
     specifiers:
       '@changesets/cli': ^2.26.0
+      '@lyrasearch/lyra': ^0.4.11
       '@nrwl/eslint-plugin-nx': 15.8.5
       '@nrwl/js': ^15.8.5
       '@nrwl/linter': 15.8.5
@@ -37,6 +38,7 @@ importers:
       vite-tsconfig-paths: ^4.0.2
       vitest: ^0.25.8
     dependencies:
+      '@lyrasearch/lyra': 0.4.11
       lodash: 4.17.21
       react: 18.2.0
       tinybase: 3.0.3_yxukhakft4zbjpxosni5ewyjim
@@ -1768,6 +1770,11 @@ packages:
       '@jridgewell/resolve-uri': 3.1.0
       '@jridgewell/sourcemap-codec': 1.4.14
     dev: true
+
+  /@lyrasearch/lyra/0.4.11:
+    resolution: {integrity: sha512-KvTTCLNG5+BaAKQnYXP/b/NMatqitHFu5LDKGxbga7IXZMPFBdJe4TSvhkJcPsdnEQOccYlPYvkxgjV9BPmV0Q==}
+    engines: {node: '>= 16.0.0'}
+    dev: false
 
   /@manypkg/find-root/1.1.0:
     resolution: {integrity: sha512-mki5uBvhHzO8kYYix/WRy2WX8S3B5wdVSc9D6KcU5lQNglP2yt58/VfLuAK49glRXChosY8ap2oJ1qgma3GUVA==}

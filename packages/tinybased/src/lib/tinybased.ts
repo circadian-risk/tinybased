@@ -13,6 +13,7 @@ import { SimpleQueryBuilder } from './queries';
 import {
   OnlyStringKeys,
   Prettify,
+  HydrateConfig,
   RelationshipDefinition,
   RowChangeHandler,
   SchemaHydrator,
@@ -20,6 +21,7 @@ import {
 } from './types';
 import keyBy from 'lodash/keyBy';
 import { TableBuilder } from './TableBuilder';
+import { isFunction, noop } from 'lodash';
 
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
@@ -43,7 +45,7 @@ export class TinyBased<
    * Instead, use the SchemaBuilder class to build your schema and then call .build() to receive an instance of this class
    */
   constructor(
-    private readonly tables: Map<string, TableBuilder<any, any>>,
+    public readonly tables: Map<string, TableBuilder<any, any>>,
     relationshipDefs: RelationshipDefinition[] = []
   ) {
     this.store = createStore();
@@ -81,13 +83,44 @@ export class TinyBased<
         if (store.hasRow(table, rowId)) {
           const row = store.getRow(table, rowId);
           this.events.onRowAddedOrUpdated?.forEach((handler) =>
-            handler(table, rowId, row)
+            handler(table, rowId, row as any)
           );
         } else {
           this.events.onRowRemoved?.forEach((handler) => handler(table, rowId));
         }
       });
     }
+  }
+
+  public onRowAddedOrUpdated(
+    handler: RowChangeHandler<TBSchema>,
+    canMutate = false
+  ) {
+    this.store.addRowListener(
+      null,
+      null,
+      (store, table, rowId) => {
+        if (store.hasRow(table, rowId)) {
+          const row = store.getRow(table, rowId);
+
+          handler(table, rowId, row as any);
+        }
+      },
+      canMutate
+    );
+  }
+
+  public onRowRemoved(handler: RowChangeHandler<TBSchema>, canMutate = false) {
+    this.store.addRowListener(
+      null,
+      null,
+      (store, table, rowId) => {
+        if (!store.hasRow(table, rowId)) {
+          handler(table, rowId);
+        }
+      },
+      canMutate
+    );
   }
 
   public async hydrate() {

@@ -42,6 +42,7 @@
     "packages/*"
   ],
   "dependencies": {
+    "@lyrasearch/lyra": "^0.4.11",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "tinybase": "^3.0.3"
