@@ -4,3 +4,4 @@ export * from './lib/types';
 export * from './lib/SchemaBuilder';
 export * from './lib/queries';
 export * from './lib/TableBuilder';
+export * from './lib/search';
