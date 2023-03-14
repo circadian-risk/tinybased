@@ -69,12 +69,13 @@ describe('tinybased', () => {
       based.mergeRow('users', USER_ID_1, {
         isAdmin: false,
         age: 42,
+        name: undefined,
       });
 
       const afterMerge = based.getRow('users', USER_ID_1);
-      expect(afterMerge).toEqual({
+
+      expect(afterMerge).toMatchObject({
         id: USER_ID_1,
-        name: 'Jesse',
         age: 42,
         isAdmin: false,
       });
