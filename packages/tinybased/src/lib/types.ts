@@ -30,8 +30,13 @@ export type InferTinyBased<SB> = SB extends SchemaBuilder<infer S, infer R>
   ? TinyBased<S, R>
   : never;
 
+export type HydrateConfig<
+  TBSchema extends TinyBaseSchema,
+  K extends keyof TBSchema
+> = () => Promise<TBSchema[K][]>;
+
 export type SchemaHydrators<TBSchema extends TinyBaseSchema> = {
-  [TTableName in keyof TBSchema]: () => Promise<TBSchema[TTableName][]>;
+  [TTableName in keyof TBSchema]: HydrateConfig<TBSchema, TTableName>;
 };
 
 export type SchemaHydrator<TBSchema extends TinyBaseSchema> = {
@@ -71,10 +76,12 @@ export type RelationshipDefinition = {
   cell: string;
 };
 
-export type RowChangeHandler<TBSchema extends TinyBaseSchema> = (
-  tableName: keyof TBSchema,
+export type RowChangeHandler<TBSchema extends TinyBaseSchema> = <
+  TName extends keyof TBSchema
+>(
+  tableName: TName,
   rowId: string,
-  entity?: Table
+  entity?: TBSchema[TName]
 ) => Promise<void>;
 
 export type OnlyStringKeys<T extends Record<PropertyKey, unknown>> = Exclude<

@@ -6,13 +6,47 @@ interface CellTypeMap {
   boolean: boolean;
 }
 
-type CellStringType = 'string' | 'boolean' | 'number';
+/**
+ * Supported Cell Types as string literals
+ */
+export type CellStringType = 'string' | 'boolean' | 'number';
+
+/**
+ * Maps Cell type to their corresponding CellStringType string literal.
+ */
+export type CellTypeToString<T> = T extends string
+  ? 'string'
+  : T extends boolean
+  ? 'boolean'
+  : T extends number
+  ? 'number'
+  : never;
+
+/**
+ * Given an Object, convert it to its CellStringType representation.
+ *
+ * Types `number`, `boolean` and `string` will get converted to string literals `"number"`, `"boolean"`, `"string"`
+ */
+export type ObjectToCellStringType<O extends Record<string, unknown>> = {
+  [K in OnlyStringKeys<O>]: CellTypeToString<O[K]>;
+};
+
+/**
+ * Given keys of an object, T, returns a Record keyed by T with CellStringType values (`'string' | 'boolean' | 'number'`)
+ */
+export type TableSchema<T> = T extends string
+  ? Record<T, CellStringType>
+  : never;
 
 export type CellSchema = {
   name: string;
   type: CellStringType;
   optional?: boolean;
 };
+
+export type InferTable<T> = T extends TableBuilder<infer _TName, infer TCells>
+  ? Prettify<TCells>
+  : never;
 
 export class TableBuilder<
   TName extends string = never,
@@ -33,6 +67,16 @@ export class TableBuilder<
 
   public get cells() {
     return this._cells;
+  }
+
+  /**
+   * Returns a schema object
+   */
+  public get schema(): TableSchema<keyof TCells> {
+    return this._cells.reduce(
+      (acc, cell) => ({ ...acc, [cell.name]: cell.type }),
+      {}
+    ) as TableSchema<keyof TCells>;
   }
 
   add<TCellName extends string, TCellType extends CellStringType>(
@@ -62,7 +106,3 @@ export class TableBuilder<
     return this;
   }
 }
-
-export type InferTable<T> = T extends TableBuilder<infer _TName, infer TCells>
-  ? Prettify<TCells>
-  : never;

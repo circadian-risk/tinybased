@@ -4,12 +4,12 @@ import { TinyBased } from './tinybased';
 import {
   DeepPrettify,
   OnlyStringKeys,
-  TableDefs,
   RelationshipDefinition,
   RowChangeHandler,
   SchemaHydrator,
   SchemaHydrators,
   SchemaPersister,
+  TableDefs,
   TinyBaseSchema,
 } from './types';
 
@@ -17,7 +17,7 @@ export class SchemaBuilder<
   TBSchema extends TinyBaseSchema = {},
   TRelationships extends string = never
 > {
-  private readonly tables: Map<string, TableBuilder<any, any>> = new Map();
+  public readonly tables: Map<string, TableBuilder<any, any>> = new Map();
 
   private readonly relationshipDefinitions: RelationshipDefinition[] = [];
   private hydrators: SchemaHydrators<TBSchema> =
@@ -115,7 +115,6 @@ export class SchemaBuilder<
     await tb.hydrate();
 
     // Event handlers
-
     this.rowAddedOrUpdatedHandlers.forEach((handler) => {
       tb.events.onRowAddedOrUpdated.add(handler);
     });
