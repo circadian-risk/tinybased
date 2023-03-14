@@ -13,7 +13,6 @@ import { SimpleQueryBuilder } from './queries';
 import {
   OnlyStringKeys,
   Prettify,
-  HydrateConfig,
   RelationshipDefinition,
   RowChangeHandler,
   SchemaHydrator,
@@ -21,7 +20,6 @@ import {
 } from './types';
 import keyBy from 'lodash/keyBy';
 import { TableBuilder } from './TableBuilder';
-import { isFunction, noop } from 'lodash';
 
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
@@ -45,7 +43,10 @@ export class TinyBased<
    * Instead, use the SchemaBuilder class to build your schema and then call .build() to receive an instance of this class
    */
   constructor(
-    public readonly tables: Map<string, TableBuilder<any, any>>,
+    public readonly tables: Map<
+      string,
+      TableBuilder<string, Record<string, unknown>>
+    >,
     relationshipDefs: RelationshipDefinition[] = []
   ) {
     this.store = createStore();
@@ -138,35 +139,54 @@ export class TinyBased<
     }
   }
 
-  simpleQuery<TTable extends keyof TBSchema>(
+  simpleQuery<TTable extends OnlyStringKeys<TBSchema>>(
     table: TTable
   ): SimpleQueryBuilder<TBSchema[TTable]> {
-    return new SimpleQueryBuilder(table as string, this.queries);
+    return new SimpleQueryBuilder(table, this.queries);
   }
 
-  getRowCount<TTable extends keyof TBSchema>(table: TTable) {
-    return this.metrics.getMetric(makeTableRowCountMetricName(table as string));
+  getRowCount<TTable extends OnlyStringKeys<TBSchema>>(table: TTable) {
+    return this.metrics.getMetric(makeTableRowCountMetricName(table));
   }
 
-  setRow<TTable extends keyof TBSchema>(
+  setRow<TTable extends OnlyStringKeys<TBSchema>>(
     table: TTable,
     rowId: string,
     row: TBSchema[TTable]
   ) {
-    this.store.setRow(table as string, rowId, row);
+    this.store.setRow(table, rowId, row);
   }
 
-  getRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
-    return this.store.getRow(table as string, rowId) as TBSchema[TTable];
+  /**
+   * Merges an existing row with new data. This allows for updating
+   * a subset of fields while perserving any existing data in the row
+   */
+  mergeRow<TTable extends OnlyStringKeys<TBSchema>>(
+    table: TTable,
+    rowId: string,
+    toMerge: Partial<TBSchema[TTable]>
+  ) {
+    const current = this.getRow(table, rowId);
+    this.setRow(table, rowId, { ...current, ...toMerge });
   }
 
-  hasRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
-    return this.store.hasRow(table as string, rowId);
+  getRow<TTable extends OnlyStringKeys<TBSchema>>(
+    table: TTable,
+    rowId: string
+  ) {
+    return this.store.getRow(table, rowId) as TBSchema[TTable];
+  }
+
+  hasRow<TTable extends OnlyStringKeys<TBSchema>>(
+    table: TTable,
+    rowId: string
+  ) {
+    return this.store.hasRow(table, rowId);
   }
 
   getSortedRowIds<
-    TTable extends keyof TBSchema,
-    TCell extends keyof TBSchema[TTable]
+    TTable extends OnlyStringKeys<TBSchema>,
+    TCell extends OnlyStringKeys<TBSchema[TTable]>
   >(
     table: TTable,
     cellId: TCell,
@@ -177,16 +197,19 @@ export class TinyBased<
     }
   ) {
     return this.store.getSortedRowIds(
-      table as string,
-      cellId as string,
+      table,
+      cellId,
       options?.descending,
       options?.offset,
       options?.limit
     );
   }
 
-  deleteRow<TTable extends keyof TBSchema>(table: TTable, rowId: string) {
-    return this.store.delRow(table as string, rowId);
+  deleteRow<TTable extends OnlyStringKeys<TBSchema>>(
+    table: TTable,
+    rowId: string
+  ) {
+    return this.store.delRow(table, rowId);
   }
 
   getTable<TTable extends OnlyStringKeys<TBSchema>>(tableName: TTable) {
@@ -196,35 +219,33 @@ export class TinyBased<
     >;
   }
 
-  getCell<TTable extends keyof TBSchema, TCell extends keyof TBSchema[TTable]>(
-    table: TTable,
-    rowId: string,
-    cellId: TCell
-  ): TBSchema[TTable][TCell] {
-    return this.store.getCell(
-      table as string,
-      rowId,
-      cellId as string
-    ) as TBSchema[TTable][TCell];
+  getCell<
+    TTable extends OnlyStringKeys<TBSchema>,
+    TCell extends OnlyStringKeys<TBSchema[TTable]>
+  >(table: TTable, rowId: string, cellId: TCell): TBSchema[TTable][TCell] {
+    return this.store.getCell(table, rowId, cellId) as TBSchema[TTable][TCell];
   }
 
-  setCell<TTable extends keyof TBSchema, TCell extends keyof TBSchema[TTable]>(
+  setCell<
+    TTable extends OnlyStringKeys<TBSchema>,
+    TCell extends OnlyStringKeys<TBSchema[TTable]>
+  >(
     table: TTable,
     rowId: string,
     cellId: TCell,
     value: TBSchema[TTable][TCell]
   ) {
     if (value == null) {
-      return this.store.delCell(table as string, rowId, cellId as string);
+      return this.store.delCell(table, rowId, cellId);
     }
-    return this.store.setCell(table as string, rowId, cellId as string, value);
+    return this.store.setCell(table, rowId, cellId, value);
   }
 
   deleteCell<
-    TTable extends keyof TBSchema,
-    TCell extends keyof TBSchema[TTable]
+    TTable extends OnlyStringKeys<TBSchema>,
+    TCell extends OnlyStringKeys<TBSchema[TTable]>
   >(table: TTable, rowId: string, cellId: TCell) {
-    return this.store.delCell(table as string, rowId, cellId as string);
+    return this.store.delCell(table, rowId, cellId);
   }
 
   getLocalIds(relationshipName: TRelationships, rowId: string) {

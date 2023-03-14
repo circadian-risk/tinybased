@@ -23,34 +23,63 @@ const exampleNote = {
 const baseBuilder = new SchemaBuilder().addTable(usersTable);
 
 describe('tinybased', () => {
-  it('should provide a typesafe wrapper for getTable', async () => {
-    const based = await baseBuilder.build();
-    based.setRow('users', '1', exampleUser);
+  describe('Basic CRUD', () => {
+    it('should provide a typesafe wrapper for getTable', async () => {
+      const based = await baseBuilder.build();
+      based.setRow('users', '1', exampleUser);
 
-    const table = based.getTable('users');
-    expect(table).toEqual({
-      '1': exampleUser,
+      const table = based.getTable('users');
+      expect(table).toEqual({
+        '1': exampleUser,
+      });
+
+      expectTypeOf(table).toEqualTypeOf<
+        Record<
+          string,
+          { id: string; name: string; age: number; isAdmin: boolean }
+        >
+      >();
     });
 
-    expectTypeOf(table).toEqualTypeOf<
-      Record<
-        string,
-        { id: string; name: string; age: number; isAdmin: boolean }
-      >
-    >();
-  });
+    it('should handle type safe rows and cells', async () => {
+      const based = await baseBuilder.build();
+      based.setRow('users', '1', exampleUser);
 
-  it('should handle type safe rows and cells', async () => {
-    const based = await baseBuilder.build();
-    based.setRow('users', '1', exampleUser);
+      expect(based.getRow('users', '1')).toEqual(exampleUser);
+      const age = based.getCell('users', '1', 'age');
+      expect(age).toBe(33);
 
-    expect(based.getRow('users', '1')).toEqual(exampleUser);
-    const age = based.getCell('users', '1', 'age');
-    expect(age).toBe(33);
+      based.deleteCell('users', '1', 'age');
+      const age2 = based.getCell('users', '1', 'age');
+      expect(age2).toBeUndefined();
+    });
 
-    based.deleteCell('users', '1', 'age');
-    const age2 = based.getCell('users', '1', 'age');
-    expect(age2).toBeUndefined();
+    it('should be able to merge rows with partial data', async () => {
+      const based = await baseBuilder.build();
+      based.setRow('users', USER_ID_1, exampleUser);
+
+      const existing = based.getRow('users', USER_ID_1);
+      expect(existing).toEqual({
+        id: USER_ID_1,
+        name: 'Jesse',
+        age: 33,
+        isAdmin: true,
+      });
+
+      based.mergeRow('users', USER_ID_1, {
+        isAdmin: false,
+        age: 42,
+        name: undefined,
+      });
+
+      const afterMerge = based.getRow('users', USER_ID_1);
+
+      expect(afterMerge).toMatchObject({
+        id: USER_ID_1,
+        age: 42,
+        isAdmin: false,
+      });
+    });
   });
 
   it('getSortedRowIds: should return sorted id by cell', async () => {
