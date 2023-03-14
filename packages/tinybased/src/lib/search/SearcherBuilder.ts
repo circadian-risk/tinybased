@@ -24,12 +24,12 @@ export class SearcherBuilder<TSchema extends TinyBaseSchema = {}> {
     TName extends string,
     TCells extends Record<string, unknown>
   >(tableBuilder: TableBuilder<TName, TCells>) {
-    if (this.tables.has(tableBuilder.tableName as any)) {
+    if (this.tables.has(tableBuilder.tableName)) {
       throw Error(
         SearcherBuilder.ERRORS.TABLE_ALREADY_DEFINED(tableBuilder.tableName)
       );
     }
-    this.tables.set(tableBuilder.tableName as any, tableBuilder);
+    this.tables.set(tableBuilder.tableName, tableBuilder);
 
     return this as unknown as SearcherBuilder<TSchema & Record<TName, TCells>>;
   }
