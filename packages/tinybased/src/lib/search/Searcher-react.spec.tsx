@@ -14,7 +14,10 @@ import {
 import { waitAMoment } from '../../testing/utils';
 import { SchemaBuilder } from '../SchemaBuilder';
 import { DeepPrettify, InferSchema } from '../types';
-import { connectTinybasedSearcher } from './connectTinybasedSearcher';
+import {
+  connectTinybasedSearcher,
+  UseSearchType,
+} from './connectTinybasedSearcher';
 
 const schemaBuilder = new SchemaBuilder()
   .addTable(usersTable)
@@ -28,14 +31,11 @@ type Schema = DeepPrettify<InferSchema<typeof schemaBuilder>>;
 
 describe('Searcher in react', () => {
   let tb!: Awaited<ReturnType<(typeof schemaBuilder)['build']>>;
-  let builtSearch!: Awaited<
-    ReturnType<typeof connectTinybasedSearcher<Schema, 'users' | 'notes'>>
-  >;
-  let useSearch!: (typeof builtSearch)['useSearch'];
+  let useSearch!: UseSearchType<Schema, 'users' | 'notes'>;
 
   beforeEach(async () => {
     tb = await schemaBuilder.build();
-    builtSearch = await connectTinybasedSearcher(tb, ['users', 'notes']);
+    const builtSearch = await connectTinybasedSearcher(tb, ['users', 'notes']);
     useSearch = builtSearch.useSearch;
   });
 

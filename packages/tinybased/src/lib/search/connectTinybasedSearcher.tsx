@@ -13,6 +13,20 @@ const SEARCH_LAST_UPDATED_AT = (table: string | symbol | number) =>
   `__internal__tinybased__${String(table)}-last-updated-at`;
 
 /**
+ * Type for defining useSearch generics
+ */
+export type UseSearchType<
+  TBSchema extends TinyBaseSchema,
+  TIndexes extends OnlyStringKeys<TBSchema>
+> = <K extends TIndexes>(
+  index: K,
+  /**
+   * Tables in the Tinybased instance to be indexed and searchable
+   */
+  params: SearchParams<ObjectToCellStringType<TBSchema[K]>>
+) => SearchResult<ObjectToCellStringType<TBSchema[K]>> | undefined;
+
+/**
  * Generates a type-safe Searcher instance and its corresponding `useSearch` hook for a fully
  * connected and reactive Full Text Search of an underlying `tinybased` dataset.
  */
@@ -82,7 +96,7 @@ export const connectTinybasedSearcher = async <
   /**
    * Type-safe, reactive hook to execute `search` on the Searcher instance of a Tinybased instance
    */
-  const useSearch = <K extends TIndexes>(
+  const useSearch: UseSearchType<TBSchema, TIndexes> = <K extends TIndexes>(
     index: K,
     /**
      * Tables in the Tinybased instance to be indexed and searchable
