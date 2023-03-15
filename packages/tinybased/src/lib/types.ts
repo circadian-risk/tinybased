@@ -63,7 +63,7 @@ export type SchemaPersister<TBSchema extends TinyBaseSchema> = {
 
 export type Aggregations = 'avg' | 'count' | 'sum' | 'max' | 'min';
 
-export type QueryOptions = {
+export type SortOptions = {
   descending?: boolean;
   offset?: number;
   limit?: number;
