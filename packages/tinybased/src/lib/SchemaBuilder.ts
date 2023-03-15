@@ -17,7 +17,10 @@ export class SchemaBuilder<
   TBSchema extends TinyBaseSchema = {},
   TRelationships extends string = never
 > {
-  public readonly tables: Map<string, TableBuilder<any, any>> = new Map();
+  public readonly tables: Map<
+    string,
+    TableBuilder<string, Record<string, unknown>>
+  > = new Map();
 
   private readonly relationshipDefinitions: RelationshipDefinition[] = [];
   private hydrators: SchemaHydrators<TBSchema> =
