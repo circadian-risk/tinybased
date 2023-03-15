@@ -38,10 +38,7 @@ export const connectTinybasedSearcher = async <
   indexes: Array<TIndexes>
 ): Promise<{
   searcher: Searcher<Pick<TBSchema, TIndexes>>;
-  useSearch: <K extends TIndexes>(
-    index: K,
-    params: SearchParams<ObjectToCellStringType<TBSchema[K]>>
-  ) => SearchResult<ObjectToCellStringType<TBSchema[K]>> | undefined;
+  useSearch: UseSearchType<TBSchema, TIndexes>;
 }> => {
   const searchBuilder = new SearcherBuilder();
 
