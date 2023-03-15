@@ -18,7 +18,7 @@ import { renderHook, act } from '@testing-library/react-hooks';
 describe('Tinybased React', () => {
   let based: Awaited<ReturnType<typeof makeTinyBasedTestFixture>>;
   let hooks: TinyBasedReactHooks<typeof based>;
-  beforeAll(async () => {
+  beforeEach(async () => {
     based = await makeTinyBasedTestFixture();
     hooks = makeTinybasedHooks(based);
   });
@@ -68,6 +68,26 @@ describe('Tinybased React', () => {
       });
 
       expect(result.current).toEqual([USER_ID_1, USER_ID_2, USER_ID_3]);
+    });
+
+    it('useSortedRowIds', () => {
+      const { result } = renderHook(() =>
+        hooks.useSortedRowIds('users', 'age', { limit: 2 })
+      );
+
+      expect(result.current).toEqual([USER_ID_1, USER_ID_2]);
+
+      const USER_ID_3 = 'user3';
+
+      // Insert a new row that has a younger age than any of the previous rows
+      based.setRow('users', USER_ID_3, {
+        age: 2,
+        isAdmin: false,
+        name: 'Zach',
+        id: USER_ID_3,
+      });
+
+      expect(result.current).toEqual([USER_ID_3, USER_ID_1]);
     });
 
     it('useLocalRowIds', () => {

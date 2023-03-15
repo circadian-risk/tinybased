@@ -380,6 +380,29 @@ describe('tinybased', () => {
 
       expect(based.getRow('composite', expectedRowId)).toEqual(row);
     });
+
+    it('should handle custom composite keys during hydration', async () => {
+      const tableWithCompositeKey = new TableBuilder('composite')
+        .add('comp1', 'string')
+        .add('comp2', 'string')
+        .keyBy(['comp1', 'comp2'])
+        .defineKeyDelimiter('+');
+
+      const KEY1 = 'key1';
+      const KEY2 = 'key2';
+      const expectedRowId = `${KEY1}+${KEY2}`;
+
+      const row = { comp1: KEY1, comp2: KEY2 };
+
+      const based = await new SchemaBuilder()
+        .addTable(tableWithCompositeKey)
+        .defineHydrators({
+          composite: () => Promise.resolve([row]),
+        })
+        .build();
+
+      expect(based.getRow('composite', expectedRowId)).toEqual(row);
+    });
   });
 
   describe('persistence', () => {

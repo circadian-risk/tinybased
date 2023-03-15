@@ -5,6 +5,7 @@ import {
   useRow as tbUseRow,
   useCell as tbUseCell,
   useRowIds as tbUseRowIds,
+  useSortedRowIds as tbUseSortedRowIds,
   useLocalRowIds as tbUseLocalRowIds,
   useRemoteRowId as tbUseRemoteRowId,
   useResultSortedRowIds,
@@ -17,7 +18,7 @@ import {
   InferRelationShip,
   InferSchema,
   OnlyStringKeys,
-  QueryOptions,
+  SortOptions,
   Table,
 } from './types';
 
@@ -46,7 +47,7 @@ export function useSimpleQueryResultIds(query: SimpleQuery) {
 export function useSimpleQuerySortedResultIds<
   TTable extends Table = {},
   TCells extends OnlyStringKeys<TTable> = never
->(query: SimpleQuery<TTable, TCells>, sortBy: TCells, options?: QueryOptions) {
+>(query: SimpleQuery<TTable, TCells>, sortBy: TCells, options?: SortOptions) {
   const { descending = false, offset, limit } = options || {};
   return useResultSortedRowIds(
     query.queryId,
@@ -73,6 +74,20 @@ export type TinyBasedReactHooks<
   ) => TBSchema[TTable][TCell];
 
   useRowIds: <TTable extends keyof TBSchema>(table: TTable) => string[];
+
+  /**
+   * Returns rows ids for the specified table which are sorted by the specified column. By default
+   * they will be sorted in ascending order, but this and other options for pagination can be provided.
+   * The hook will automatically re-render if the underlying data changes
+   */
+  useSortedRowIds: <
+    TTable extends keyof TBSchema,
+    TCell extends keyof TBSchema[TTable]
+  >(
+    table: TTable,
+    sortBy: TCell,
+    sortOptions?: SortOptions
+  ) => string[];
 
   useRow: <TTable extends keyof TBSchema>(
     table: TTable,
@@ -121,6 +136,25 @@ export function makeTinybasedHooks<
     return tbUseRowIds(table as string, store) as string[];
   };
 
+  const useSortedRowIds = <
+    TTable extends keyof TBSchema,
+    TCell extends keyof TBSchema[TTable]
+  >(
+    table: TTable,
+    sortBy: TCell,
+    sortOptions?: SortOptions
+  ) => {
+    const { descending = false, offset, limit } = sortOptions || {};
+    return tbUseSortedRowIds(
+      table as string,
+      sortBy as string,
+      descending,
+      offset,
+      limit,
+      store
+    );
+  };
+
   const useLocalRowIds = (relationshipName: TRelationships, rowId: string) => {
     return tbUseLocalRowIds(
       relationshipName as string,
@@ -140,6 +174,7 @@ export function makeTinybasedHooks<
   return {
     useCell,
     useRowIds,
+    useSortedRowIds,
     useRow,
     useLocalRowIds,
     useRemoteRowId,

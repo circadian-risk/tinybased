@@ -58,6 +58,7 @@ export class TableBuilder<
   // TODO: It would be awesome if we could default to 'id' only if it exists as a non optional string on the
   // current table builder. If not present, it should not be possible to add the Table to the SchemaBuilder
   private _keys: string[] = ['id'];
+  private _keyDelimiter = '::';
 
   constructor(public readonly tableName: TName) {}
 
@@ -99,10 +100,22 @@ export class TableBuilder<
     return this;
   }
 
+  defineKeyDelimiter(delimiter: string) {
+    this._keyDelimiter = delimiter;
+    return this;
+  }
+
   keyBy<TCellName extends OnlyStringKeys<TCells>>(
     cells: TCellName | TCellName[]
   ) {
     this._keys = Array.isArray(cells) ? cells : [cells];
     return this;
+  }
+
+  composeKey(rowOrKeyValues: TCells | string[]) {
+    const keyValues = Array.isArray(rowOrKeyValues)
+      ? rowOrKeyValues
+      : this._keys.map((key) => rowOrKeyValues[key]);
+    return keyValues.join(this._keyDelimiter);
   }
 }

@@ -130,12 +130,15 @@ export class TinyBased<
   public async hydrate() {
     if (this.hydrators.size > 0) {
       await Promise.all(
-        Array.from(this.hydrators).map(async ([table, hydrator]) => {
+        Array.from(this.hydrators).map(async ([tableName, hydrator]) => {
           const entries = await hydrator();
-          const tableKeys = this.tables.get(table)?.keys ?? [];
+          const table = this.tables.get(tableName);
+          if (!table) {
+            return;
+          }
           this.store.setTable(
-            table,
-            keyBy(entries, (e) => `${tableKeys.map((k) => e[k]).join('::')}`)
+            tableName,
+            keyBy(entries, (e) => table.composeKey(e))
           );
         })
       );

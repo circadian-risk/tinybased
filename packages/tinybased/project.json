@@ -16,7 +16,7 @@
         "project": "packages/tinybased/package.json",
         "compiler": "babel",
         "updateBuildableProjectDepsInPackageJson": true,
-        "external": ["tinybase"]
+        "external": ["tinybase", "react"]
       }
     },
     "publish": {
