@@ -124,6 +124,9 @@ export class TinyBased<
     );
   }
 
+  /**
+   *  Do not call this method directly. Its probably a smell that this is on the public API for this class
+   */
   public async hydrate() {
     if (this.hydrators.size > 0) {
       await Promise.all(

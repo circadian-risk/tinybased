@@ -80,6 +80,36 @@ describe('tinybased', () => {
         isAdmin: false,
       });
     });
+
+    it('should handle nulls if they are provided through ejecting types with any', async () => {
+      const based = await baseBuilder.build();
+      based.setRow('users', USER_ID_1, exampleUser);
+
+      const existing = based.getRow('users', USER_ID_1);
+      expect(existing).toEqual({
+        id: USER_ID_1,
+        name: 'Jesse',
+        age: 33,
+        isAdmin: true,
+      });
+
+      based.mergeRow('users', USER_ID_1, {
+        isAdmin: false,
+        age: 42,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        name: null as any,
+      });
+
+      const afterMerge = based.getRow('users', USER_ID_1);
+
+      // If null is provided in a type unsafe way, it should have the same impact as explicit undefined
+      // which should delete the cell from the underlying row
+      expect(afterMerge).toMatchObject({
+        id: USER_ID_1,
+        age: 42,
+        isAdmin: false,
+      });
+    });
   });
 
   it('getSortedRowIds: should return sorted id by cell', async () => {
