@@ -53,6 +53,11 @@ export class SimpleQueryBuilder<
     return new SimpleAggregateQuery(this.queries, queryId, aggregateOperation);
   }
 
+  /**
+   * Returns a query object. This query object can be used in two primary ways:
+   *   1. You can ask for its results immediately using the `get` methods that are attached
+   *   2. You can pass this to a React hook to wire it up for reactive updates using eg. useSimpleQueryResultIds
+   */
   build(): SimpleQuery<TTable, TCells> {
     const queryId = this.internalBuild();
 

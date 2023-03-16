@@ -22,6 +22,11 @@ import {
   Table,
 } from './types';
 
+/**
+ * Given a simple query object, will subscribe to reactively update
+ * results and return them as Record keyed by the matching row Id
+ * with a value matching the queried cells
+ */
 export const useSimpleQueryResultTable = <
   TTable extends Table = {},
   TCells extends OnlyStringKeys<TTable> = never
@@ -40,10 +45,19 @@ export function useSimpleAggregateResult<TAggregation extends Aggregations>(
   return useResultRow(query.queryId, '0', query.queries) as any;
 }
 
+/**
+ * Given a simple query object, will subscribe to reactively update
+ * results of query and return the corresponding ids of the matching records
+ */
 export function useSimpleQueryResultIds(query: SimpleQuery) {
   return useResultRowIds(query.queryId, query.queries);
 }
 
+/**
+ * Given a simple query object, will subscribe to reactively update
+ * results of the query based on the provided sorting criteria and return
+ * the corresponding Ids of the matching records
+ */
 export function useSimpleQuerySortedResultIds<
   TTable extends Table = {},
   TCells extends OnlyStringKeys<TTable> = never
@@ -73,10 +87,13 @@ export type TinyBasedReactHooks<
     cellId: TCell
   ) => TBSchema[TTable][TCell];
 
+  /**
+   * Reactively returns the ids of all of the rows in the chosen table
+   */
   useRowIds: <TTable extends keyof TBSchema>(table: TTable) => string[];
 
   /**
-   * Returns rows ids for the specified table which are sorted by the specified column. By default
+   * Reactively returns rows ids for the specified table which are sorted by the specified column. By default
    * they will be sorted in ascending order, but this and other options for pagination can be provided.
    * The hook will automatically re-render if the underlying data changes
    */
@@ -94,6 +111,11 @@ export type TinyBasedReactHooks<
     rowId: string
   ) => TBSchema[TTable];
 
+  /**
+   * Returns the ids of all of the matching objects from a named relationship
+   *    Eg. for a database that had a relationship from 1 user -> many notes, would
+   *    return the reactive set of all note ids that belonged to the user
+   */
   useLocalRowIds: (relationshipName: TRelationships, rowId: string) => string[];
 
   useRemoteRowId: (
@@ -102,6 +124,9 @@ export type TinyBasedReactHooks<
   ) => string | undefined;
 };
 
+/**
+ * Generates a set of typesafe react hooks based on the provided TinyBased instance
+ */
 export function makeTinybasedHooks<
   TB extends TinyBased<any, any>,
   TBSchema = InferSchema<TB>,
