@@ -26,7 +26,13 @@ export type InferRelationShip<T> = T extends SchemaBuilder<infer _S, infer R>
   ? R
   : never;
 
-export type InferTinyBased<SB> = SB extends SchemaBuilder<infer S, infer R>
+/**
+ * Given a typeof SchemaBuilder instance, returns the TinyBased type that would be created from it
+ */
+export type InferTinyBasedFromSchemaBuilder<SB> = SB extends SchemaBuilder<
+  infer S,
+  infer R
+>
   ? TinyBased<S, R>
   : never;
 
