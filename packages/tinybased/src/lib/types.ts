@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { SchemaBuilder } from './SchemaBuilder';
 import { CellSchema } from './TableBuilder';
 import { TinyBased } from './tinybased';
@@ -9,9 +10,9 @@ export type TableNames<TBSchema extends TinyBaseSchema> =
   OnlyStringKeys<TBSchema>;
 
 export type InferSchema<T> = T extends SchemaBuilder<infer S, infer _R>
-  ? S
+  ? DeepPrettify<S>
   : T extends TinyBased<infer S, infer _R>
-  ? S
+  ? DeepPrettify<S>
   : never;
 
 export type InferTableNames<T> = T extends SchemaBuilder<infer _S, infer _R>
@@ -23,6 +24,26 @@ export type InferTableNames<T> = T extends SchemaBuilder<infer _S, infer _R>
 export type InferRelationShip<T> = T extends SchemaBuilder<infer _S, infer R>
   ? R
   : T extends TinyBased<infer _S, infer R>
+  ? R
+  : never;
+
+export type Relationship<T extends TinyBaseSchema = {}> = {
+  from: OnlyStringKeys<T>;
+  to: OnlyStringKeys<T>;
+};
+
+export type Relationships<T extends TinyBaseSchema> = Record<
+  string,
+  Relationship<T>
+>;
+
+export type InferRelationships<T> = T extends SchemaBuilder<
+  infer _T,
+  infer _RN,
+  infer R
+>
+  ? R
+  : T extends TinyBased<infer _T, infer _RN, infer R>
   ? R
   : never;
 

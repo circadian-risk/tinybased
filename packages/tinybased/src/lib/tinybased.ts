@@ -2,7 +2,7 @@
 import {
   Store,
   Metrics,
-  Relationships,
+  Relationships as TBRelationships,
   Queries,
   createStore,
   createMetrics,
@@ -17,9 +17,11 @@ import {
   RowChangeHandler,
   SchemaHydrator,
   TinyBaseSchema,
+  Relationships,
 } from './types';
 import keyBy from 'lodash/keyBy';
 import { TableBuilder } from './TableBuilder';
+import { QueryBuilder } from './queries/QueryBuilder';
 
 const makeTableRowCountMetricName = (tableName: string) =>
   `tinybased_internal_row_count_${tableName}`;
@@ -27,11 +29,12 @@ const makeTableRowCountMetricName = (tableName: string) =>
 // eslint-disable-next-line @typescript-eslint/ban-types
 export class TinyBased<
   TBSchema extends TinyBaseSchema = {},
-  TRelationships extends string = never
+  TRelationshipNames extends string = never,
+  TRelationships extends Relationships<TBSchema> = {}
 > {
   public readonly store: Store;
   public readonly metrics: Metrics;
-  public readonly relationships: Relationships;
+  public readonly relationships: TBRelationships;
   public readonly queries: Queries;
   public readonly events = {
     onRowAddedOrUpdated: new Set<RowChangeHandler<TBSchema>>(),
@@ -47,7 +50,7 @@ export class TinyBased<
       string,
       TableBuilder<string, Record<string, unknown>>
     >,
-    relationshipDefs: RelationshipDefinition[] = []
+    private readonly relationshipDefs: RelationshipDefinition[] = []
   ) {
     this.store = createStore();
     this.metrics = createMetrics(this.store);
@@ -149,6 +152,12 @@ export class TinyBased<
     table: TTable
   ): SimpleQueryBuilder<TBSchema[TTable]> {
     return new SimpleQueryBuilder(table, this.queries);
+  }
+
+  query<TTable extends OnlyStringKeys<TBSchema>>(
+    tableName: TTable
+  ): QueryBuilder<TBSchema, TRelationships, TTable> {
+    return new QueryBuilder(this.queries, tableName, this.relationshipDefs);
   }
 
   getRowCount<TTable extends OnlyStringKeys<TBSchema>>(table: TTable) {
@@ -254,11 +263,11 @@ export class TinyBased<
     return this.store.delCell(table, rowId, cellId);
   }
 
-  getLocalIds(relationshipName: TRelationships, rowId: string) {
+  getLocalIds(relationshipName: TRelationshipNames, rowId: string) {
     return this.relationships.getLocalRowIds(relationshipName, rowId);
   }
 
-  getRemoteRowId(relationshipName: TRelationships, rowId: string) {
+  getRemoteRowId(relationshipName: TRelationshipNames, rowId: string) {
     return this.relationships.getRemoteRowId(relationshipName, rowId);
   }
 }
