@@ -110,9 +110,9 @@ describe('QueryBuilder', () => {
       .query('noteTags')
       .join('noteTagNotes')
       .join('noteTagTags')
-      .whereJoin('notes', 'userId', 'user1')
-      .selectJoin('notes', 'userId')
-      .selectJoin('tags', 'name')
+      .whereFrom('notes', 'userId', 'user1')
+      .selectFrom('notes', 'userId')
+      .selectFrom('tags', 'name')
       .build();
 
     const result = qb.getResultTable();
@@ -122,7 +122,59 @@ describe('QueryBuilder', () => {
     ]);
   });
 
-  it('supports joins aggregates', async () => {
-    expect(42).toEqual(42);
+  it('supports local and joined field selection', async () => {
+    const db = await sb.build();
+
+    const qb = db
+      .query('noteTags')
+      .select('tagId')
+      .join('noteTagNotes')
+      .join('noteTagTags')
+      .whereFrom('notes', 'userId', 'user1')
+      .selectFrom('notes', 'userId')
+      .selectFrom('tags', 'name')
+      .build();
+
+    const result = qb.getResultTable();
+    expect(result).toEqual({
+      'note1::tag1': {
+        tagId: 'tag1',
+        userId: 'user1',
+        name: 'entertainment',
+      },
+      'note2::tag2': {
+        tagId: 'tag2',
+        userId: 'user1',
+        name: 'work',
+      },
+    });
+  });
+
+  it('supports local and joined field selection with aliases', async () => {
+    const db = await sb.build();
+
+    const qb = db
+      .query('noteTags')
+      .selectAs('tagId', 'theTagId')
+      .join('noteTagNotes')
+      .join('noteTagTags')
+      .whereFrom('notes', 'userId', 'user1')
+      .selectFrom('notes', 'userId')
+      .selectFromAs('tags', 'name', 'tagName')
+      .build();
+
+    const result = qb.getResultTable();
+    expect(result).toEqual({
+      'note1::tag1': {
+        theTagId: 'tag1',
+        userId: 'user1',
+        tagName: 'entertainment',
+      },
+      'note2::tag2': {
+        theTagId: 'tag2',
+        userId: 'user1',
+        tagName: 'work',
+      },
+    });
   });
 });

@@ -41,8 +41,11 @@ export class QueryBuilder<
   TSelection extends Record<string, unknown> = {}
 > {
   private readonly joins: Array<[string, string]> = [];
-  private readonly joinSelects: Array<[string, string]> = [];
-  private readonly joinWheres: Array<
+  private readonly selects: string[] = [];
+  private readonly selectsWithAlias: Array<[string, string]> = [];
+  private readonly selectFroms: Array<[string, string]> = [];
+  private readonly selectFromsWithAlias: Array<[string, string, string]> = [];
+  private readonly whereFroms: Array<
     [string, string, string | number | boolean]
   > = [];
 
@@ -60,7 +63,8 @@ export class QueryBuilder<
     TSchema,
     TRelationships,
     TStartTable,
-    TJoinedTables | TRelationships[TRelationshipName]['to']
+    TJoinedTables | TRelationships[TRelationshipName]['to'],
+    TSelection
   > {
     const { to, cell } = this.relationshipDefs.find(
       (r) => r.name === _relationshipName
@@ -69,29 +73,58 @@ export class QueryBuilder<
     return this;
   }
 
-  // where<TCellName extends OnlyStringKeys<TSchema[TStartTable]>>(
-  //   cell: TCellName,
-  //   value: TSchema[TStartTable][TCellName]
-  // ) {
-  //   return this;
-  // }
+  /**
+   * Selects a cell from the starting table of the query
+   */
+  select<TCellName extends OnlyStringKeys<TSchema[TStartTable]>>(
+    cellName: TCellName
+  ): QueryBuilder<
+    TSchema,
+    TRelationships,
+    TStartTable,
+    TJoinedTables,
+    TSelection & Record<TCellName, boolean>
+  > {
+    this.selects.push(cellName);
+    return this as any;
+  }
+
+  /**
+   * Selects a cell from the starting table and provides an alias for it
+   */
+  selectAs<
+    TCellName extends OnlyStringKeys<TSchema[TStartTable]>,
+    TAlias extends string
+  >(
+    cellName: TCellName,
+    alias: TAlias
+  ): QueryBuilder<
+    TSchema,
+    TRelationships,
+    TStartTable,
+    TJoinedTables,
+    TSelection & Record<TAlias, TSchema[TStartTable][TCellName]>
+  > {
+    this.selectsWithAlias.push([cellName, alias]);
+    return this as any;
+  }
 
   /**
    * Defines a where condition for equality on one of the joined table's cells
    */
-  whereJoin<
+  whereFrom<
     TTable extends TJoinedTables,
     TCellName extends OnlyStringKeys<TSchema[TTable]>,
     TValue extends TSchema[TTable][TCellName]
   >(tableName: TTable, cell: TCellName, value: TValue) {
-    this.joinWheres.push([tableName as string, cell, value]);
+    this.whereFroms.push([tableName as string, cell, value]);
     return this;
   }
 
   /**
    * Selects a cell from one of the joined tables
    */
-  selectJoin<
+  selectFrom<
     TTable extends TJoinedTables,
     TCellName extends OnlyStringKeys<TSchema[TTable]>
   >(
@@ -104,7 +137,30 @@ export class QueryBuilder<
     TJoinedTables,
     TSelection & Record<TCellName, number>
   > {
-    this.joinSelects.push([tableName as string, cell]);
+    this.selectFroms.push([tableName as string, cell]);
+    // TODO this was working but the type broke as soon as I added the `build` method to the class
+    return this as any;
+  }
+
+  /**
+   * Selects a cell from one of the joined tables and provides an alias for it
+   */
+  selectFromAs<
+    TTable extends TJoinedTables,
+    TCellName extends OnlyStringKeys<TSchema[TTable]>,
+    TAlias extends string
+  >(
+    tableName: TTable,
+    cell: TCellName,
+    alias: TAlias
+  ): QueryBuilder<
+    TSchema,
+    TRelationships,
+    TStartTable,
+    TJoinedTables,
+    TSelection & Record<TAlias, TSchema[TTable][TCellName]>
+  > {
+    this.selectFromsWithAlias.push([tableName as string, cell, alias]);
     // TODO this was working but the type broke as soon as I added the `build` method to the class
     return this as any;
   }
@@ -115,9 +171,9 @@ export class QueryBuilder<
   }
 
   private internalBuild() {
-    const queryId = `${this.startTable}-select-${this.joinSelects.join(
+    const queryId = `${this.startTable}-select-${this.selectFroms.join(
       '_'
-    )}-where-${this.joinWheres.join('_')}`;
+    )}-where-${this.whereFroms.join('_')}`;
 
     this.queries.setQueryDefinition(
       queryId,
@@ -126,10 +182,17 @@ export class QueryBuilder<
         this.joins.forEach(([to, cell]) => {
           join(to, cell);
         });
-        this.joinWheres.forEach(([table, cell, value]) => {
+        this.whereFroms.forEach(([table, cell, value]) => {
           return where(table, cell, value);
         });
-        this.joinSelects.forEach(([table, cell]) => select(table, cell));
+        this.selects.forEach((c) => select(c));
+        this.selectsWithAlias.forEach(([cell, alias]) =>
+          select(cell).as(alias)
+        );
+        this.selectFroms.forEach(([table, cell]) => select(table, cell));
+        this.selectFromsWithAlias.forEach(([table, cell, alias]) =>
+          select(table, cell).as(alias)
+        );
       }
     );
 
