@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/ban-types */
 import { Queries } from 'tinybase/cjs/queries';
+import { Aggregate } from 'tinybase/queries';
 import {
+  Aggregations,
   OnlyStringKeys,
   RelationshipDefinition,
   TinyBaseSchema,
@@ -48,6 +50,9 @@ export class QueryBuilder<
   private readonly whereFroms: Array<
     [string, string, string | number | boolean]
   > = [];
+  private readonly groups: Array<[string, Aggregations]> = [];
+  private readonly groupUsings: Array<[string, (any: []) => number, string]> =
+    [];
 
   constructor(
     private readonly queries: Queries,
@@ -109,6 +114,32 @@ export class QueryBuilder<
     return this as any;
   }
 
+  group<TGroupCell extends OnlyStringKeys<TSelection>>(
+    groupBy: TGroupCell,
+    agg: Aggregations
+  ): QueryBuilder<
+    TSchema,
+    TRelationships,
+    TStartTable,
+    TJoinedTables,
+    TSelection
+  > {
+    this.groups.push([groupBy, agg]);
+    return this as any;
+  }
+
+  groupUsing<
+    TGroupCell extends OnlyStringKeys<TSelection>,
+    Alias extends string
+  >(
+    groupBy: TGroupCell,
+    using: (cells: TSelection[TGroupCell][]) => number,
+    as: Alias
+  ) {
+    this.groupUsings.push([groupBy, using, as]);
+    return this;
+  }
+
   /**
    * Defines a where condition for equality on one of the joined table's cells
    */
@@ -138,6 +169,7 @@ export class QueryBuilder<
     TSelection & Record<TCellName, number>
   > {
     this.selectFroms.push([tableName as string, cell]);
+
     // TODO this was working but the type broke as soon as I added the `build` method to the class
     return this as any;
   }
@@ -161,6 +193,7 @@ export class QueryBuilder<
     TSelection & Record<TAlias, TSchema[TTable][TCellName]>
   > {
     this.selectFromsWithAlias.push([tableName as string, cell, alias]);
+
     // TODO this was working but the type broke as soon as I added the `build` method to the class
     return this as any;
   }
@@ -171,28 +204,54 @@ export class QueryBuilder<
   }
 
   private internalBuild() {
-    const queryId = `${this.startTable}-select-${this.selectFroms.join(
+    const queryId = `${this.startTable}-select-${this.selects.join(
       '_'
-    )}-where-${this.whereFroms.join('_')}`;
+    )}-selectAs-${this.selectsWithAlias.join(
+      '_'
+    )}-selectFroms-${this.selectFroms.join(
+      '_'
+    )}-selectFromAs-${this.selectFromsWithAlias.join(
+      '_'
+    )}-where-${this.whereFroms.join('_')}-group-${this.groups.join(
+      '_'
+    )}-groupUsing-${this.groupUsings.map((x) => x[0]).join('_')}`;
 
     this.queries.setQueryDefinition(
       queryId,
       this.startTable,
-      ({ where, join, select }) => {
+      ({ where, join, select, group }) => {
         this.joins.forEach(([to, cell]) => {
           join(to, cell);
         });
+
         this.whereFroms.forEach(([table, cell, value]) => {
           return where(table, cell, value);
         });
+
         this.selects.forEach((c) => select(c));
+
         this.selectsWithAlias.forEach(([cell, alias]) =>
           select(cell).as(alias)
         );
+
         this.selectFroms.forEach(([table, cell]) => select(table, cell));
+
         this.selectFromsWithAlias.forEach(([table, cell, alias]) =>
           select(table, cell).as(alias)
         );
+
+        this.groups.forEach(([cell, agg]) => group(cell, agg));
+
+        // TODO fix types for Aggregate to avoid casting to unknown
+        this.groupUsings.forEach(([cell, using, alias]) =>
+          group(cell, using as unknown as Aggregate).as(alias)
+        );
+
+        // group('userId', 'count').as('count');
+        // select('count');
+        //
+        // this.groups.forEach((g) => group(g, 'count').as('count'));
+        // select('count');
       }
     );
 

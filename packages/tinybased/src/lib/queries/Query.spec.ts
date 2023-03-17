@@ -8,6 +8,7 @@ const sb = new SchemaBuilder()
       .add('id', 'string')
       .add('userId', 'string')
       .add('likes', 'number')
+      .addOptional('isDraft', 'boolean')
   )
   .addTable(new TableBuilder('tags').add('id', 'string').add('name', 'string'))
   .addTable(
@@ -35,16 +36,19 @@ const sb = new SchemaBuilder()
         id: 'note1',
         userId: 'user1',
         likes: 4,
+        isDraft: true,
       },
       {
         id: 'note2',
         userId: 'user1',
         likes: 2,
+        isDraft: false,
       },
       {
         id: 'note3',
         userId: 'user2',
         likes: 1,
+        isDraft: false,
       },
     ],
     noteTags: async () => [
@@ -176,5 +180,44 @@ describe('QueryBuilder', () => {
         tagName: 'work',
       },
     });
+  });
+
+  it('supports aggregations', async () => {
+    const db = await sb.build();
+
+    const rawQuery = db.queries.setQueryDefinition(
+      'aggs',
+      'notes',
+      ({ where, group, select }) => {
+        select('userId');
+        select('isDraft');
+        // select('count');
+        // select('draftCount');
+        // where('userId', 'user1');
+        group('userId', 'count').as('total');
+        group('isDraft', (cells) => cells.filter(Boolean).length).as(
+          'draftCount'
+        );
+        // group('response', cells => cells.filter(Boolean).length).as('answered');
+      }
+    );
+
+    console.log(db.queries.getResultTable('aggs'));
+
+    // const qb = db.query('notes').select('userId').group('userId').build();
+    const qb = db
+      .query('notes')
+      .select('userId')
+      .select('isDraft')
+      .group('userId', 'count')
+      .groupUsing(
+        'isDraft',
+        (cells) => cells.filter(Boolean).length,
+        'draftCount'
+      )
+      .build();
+
+    const result = qb.getResultTable();
+    console.log(result);
   });
 });
