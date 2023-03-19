@@ -10,9 +10,9 @@ export type TableNames<TBSchema extends TinyBaseSchema> =
   OnlyStringKeys<TBSchema>;
 
 export type InferSchema<T> = T extends SchemaBuilder<infer S, infer _R>
-  ? DeepPrettify<S>
+  ? S
   : T extends TinyBased<infer S, infer _R>
-  ? DeepPrettify<S>
+  ? S
   : never;
 
 export type InferTableNames<T> = T extends SchemaBuilder<infer _S, infer _R>
@@ -32,7 +32,7 @@ export type Relationship<T extends TinyBaseSchema = {}> = {
   to: OnlyStringKeys<T>;
 };
 
-export type Relationships<T extends TinyBaseSchema> = Record<
+export type Relationships<T extends TinyBaseSchema = {}> = Record<
   string,
   Relationship<T>
 >;
@@ -45,6 +45,16 @@ export type InferRelationships<T> = T extends SchemaBuilder<
   ? R
   : T extends TinyBased<infer _T, infer _RN, infer R>
   ? R
+  : never;
+
+export type InferRelationshipNames<T> = T extends SchemaBuilder<
+  infer _T,
+  infer RN,
+  infer _R
+>
+  ? RN
+  : T extends TinyBased<infer _T, infer RN, infer _R>
+  ? RN
   : never;
 
 /**

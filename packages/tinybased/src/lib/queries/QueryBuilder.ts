@@ -4,6 +4,7 @@ import { Queries } from 'tinybase/cjs/queries';
 import { Aggregate } from 'tinybase/queries';
 import {
   Aggregations,
+  Cell,
   OnlyStringKeys,
   RelationshipDefinition,
   TinyBaseSchema,
@@ -40,17 +41,19 @@ export class QueryBuilder<
   TRelationships extends Relationships<TSchema> = {},
   TStartTable extends OnlyStringKeys<TSchema> = never,
   TJoinedTables extends keyof TSchema = never,
-  TSelection extends Record<string, unknown> = {}
+  TSelection extends Record<string, unknown> = {},
+  TResult extends Record<string, unknown> = {}
 > {
   private readonly joins: Array<[string, string]> = [];
   private readonly selects: string[] = [];
+  private readonly wheres: Array<[string, Cell]> = [];
   private readonly selectsWithAlias: Array<[string, string]> = [];
   private readonly selectFroms: Array<[string, string]> = [];
   private readonly selectFromsWithAlias: Array<[string, string, string]> = [];
   private readonly whereFroms: Array<
     [string, string, string | number | boolean]
   > = [];
-  private readonly groups: Array<[string, Aggregations]> = [];
+  private readonly groups: Array<[string, Aggregations, string]> = [];
   private readonly groupUsings: Array<[string, (any: []) => number, string]> =
     [];
 
@@ -69,7 +72,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables | TRelationships[TRelationshipName]['to'],
-    TSelection
+    TSelection,
+    TResult
   > {
     const { to, cell } = this.relationshipDefs.find(
       (r) => r.name === _relationshipName
@@ -88,7 +92,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    TSelection & Record<TCellName, boolean>
+    TSelection & Record<TCellName, TSchema[TStartTable][TCellName]>,
+    TResult & Record<TCellName, TSchema[TStartTable][TCellName]>
   > {
     this.selects.push(cellName);
     return this as any;
@@ -108,23 +113,26 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    TSelection & Record<TAlias, TSchema[TStartTable][TCellName]>
+    TSelection & Record<TAlias, TSchema[TStartTable][TCellName]>,
+    TResult & Record<TAlias, TSchema[TStartTable][TCellName]>
   > {
     this.selectsWithAlias.push([cellName, alias]);
     return this as any;
   }
 
-  group<TGroupCell extends OnlyStringKeys<TSelection>>(
+  group<TGroupCell extends OnlyStringKeys<TSelection>, TAlias extends string>(
     groupBy: TGroupCell,
-    agg: Aggregations
+    agg: Aggregations,
+    alias: TAlias
   ): QueryBuilder<
     TSchema,
     TRelationships,
     TStartTable,
     TJoinedTables,
-    TSelection
+    TSelection,
+    Record<TAlias, number>
   > {
-    this.groups.push([groupBy, agg]);
+    this.groups.push([groupBy, agg, alias]);
     return this as any;
   }
 
@@ -135,9 +143,31 @@ export class QueryBuilder<
     groupBy: TGroupCell,
     using: (cells: TSelection[TGroupCell][]) => number,
     as: Alias
-  ) {
+  ): QueryBuilder<
+    TSchema,
+    TRelationships,
+    TStartTable,
+    TJoinedTables,
+    TSelection,
+    TResult & Record<Alias, number>
+  > {
     this.groupUsings.push([groupBy, using, as]);
-    return this;
+    return this as any;
+  }
+
+  where<TCellName extends OnlyStringKeys<TSchema[TStartTable]>>(
+    cellName: TCellName,
+    value: TSchema[TStartTable][TCellName]
+  ): QueryBuilder<
+    TSchema,
+    TRelationships,
+    TStartTable,
+    TJoinedTables,
+    TSelection & Record<TCellName, TSchema[TStartTable][TCellName]>,
+    TResult & Record<TCellName, TSchema[TStartTable][TCellName]>
+  > {
+    this.wheres.push([cellName, value]);
+    return this as any;
   }
 
   /**
@@ -166,7 +196,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    TSelection & Record<TCellName, number>
+    TSelection & Record<TCellName, TSchema[TTable][TCellName]>,
+    TResult & Record<TCellName, TSchema[TTable][TCellName]>
   > {
     this.selectFroms.push([tableName as string, cell]);
 
@@ -190,7 +221,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    TSelection & Record<TAlias, TSchema[TTable][TCellName]>
+    TSelection & Record<TAlias, TSchema[TTable][TCellName]>,
+    TResult & Record<TAlias, TSchema[TTable][TCellName]>
   > {
     this.selectFromsWithAlias.push([tableName as string, cell, alias]);
 
@@ -198,31 +230,41 @@ export class QueryBuilder<
     return this as any;
   }
 
-  build(): Query<TSelection> {
-    const queryId = this.internalBuild();
-    return new Query(this.queries, queryId);
+  /**
+   * Returns a unique ID for this query based on all of the fluent methods
+   * that have been chained on to it. This is the ID that will be registered
+   * with the TinyBase query module when the `build` method is called
+   */
+  get queryId() {
+    const select = `select-${this.selects.join('_')}`;
+    const selectAs = `selectAs-${this.selectsWithAlias.join('_')}`;
+    const selectFrom = `selectFrom-${this.selectFroms.join('_')}`;
+    const selectFromAs = `selectFromAs-${this.selectFromsWithAlias.join('_')}`;
+    const where = `where-${this.wheres.join('_')}`;
+    const whereFrom = `where-${this.whereFroms.join('_')}`;
+    const group = `group-${this.groups.join('_')}`;
+    const groupUsing = `groupUsing-${this.groupUsings
+      .map((x) => x[0])
+      .join('_')}`;
+
+    return `${this.startTable}-${select}-${selectAs}-${selectFrom}-${selectFromAs}-${whereFrom}-${group}-${groupUsing}`;
+  }
+
+  build(): Query<TResult> {
+    this.internalBuild();
+    return new Query(this.queries, this.queryId);
   }
 
   private internalBuild() {
-    const queryId = `${this.startTable}-select-${this.selects.join(
-      '_'
-    )}-selectAs-${this.selectsWithAlias.join(
-      '_'
-    )}-selectFroms-${this.selectFroms.join(
-      '_'
-    )}-selectFromAs-${this.selectFromsWithAlias.join(
-      '_'
-    )}-where-${this.whereFroms.join('_')}-group-${this.groups.join(
-      '_'
-    )}-groupUsing-${this.groupUsings.map((x) => x[0]).join('_')}`;
-
     this.queries.setQueryDefinition(
-      queryId,
+      this.queryId,
       this.startTable,
       ({ where, join, select, group }) => {
         this.joins.forEach(([to, cell]) => {
           join(to, cell);
         });
+
+        this.wheres.forEach(([cell, value]) => where(cell, value));
 
         this.whereFroms.forEach(([table, cell, value]) => {
           return where(table, cell, value);
@@ -240,7 +282,7 @@ export class QueryBuilder<
           select(table, cell).as(alias)
         );
 
-        this.groups.forEach(([cell, agg]) => group(cell, agg));
+        this.groups.forEach(([cell, agg, alias]) => group(cell, agg).as(alias));
 
         // TODO fix types for Aggregate to avoid casting to unknown
         this.groupUsings.forEach(([cell, using, alias]) =>
@@ -254,7 +296,5 @@ export class QueryBuilder<
         // select('count');
       }
     );
-
-    return queryId;
   }
 }

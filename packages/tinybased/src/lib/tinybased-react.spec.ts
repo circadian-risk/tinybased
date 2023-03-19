@@ -1,8 +1,12 @@
 import {
   makeTinyBasedTestFixture,
+  NOTE_2,
   NOTE_ID,
+  NOTE_ID_2,
+  NOTE_ID_3,
   USER_ID_1,
   USER_ID_2,
+  USER_ID_3,
 } from '../fixture/database';
 import {
   makeTinybasedHooks,
@@ -17,6 +21,7 @@ import { renderHook, act } from '@testing-library/react-hooks';
 
 describe('Tinybased React', () => {
   let based: Awaited<ReturnType<typeof makeTinyBasedTestFixture>>;
+
   let hooks: TinyBasedReactHooks<typeof based>;
   beforeEach(async () => {
     based = await makeTinyBasedTestFixture();
@@ -111,6 +116,61 @@ describe('Tinybased React', () => {
       );
 
       expect(result.current).toEqual(based.getCell('notes', NOTE_ID, 'userId'));
+    });
+
+    describe('queries', () => {
+      it('result table', () => {
+        const { result } = renderHook(() =>
+          hooks.useQueryResult(
+            based.query('notes').select('text').where('userId', USER_ID_1)
+          )
+        );
+
+        expect(result.current).toEqual({
+          noteId1: { text: 'Hello world' },
+          noteId2: { text: 'TinyBased' },
+        });
+
+        based.deleteRow('notes', NOTE_ID_2);
+
+        expect(result.current).toEqual({
+          noteId1: { text: 'Hello world' },
+        });
+      });
+
+      it('result ids', () => {
+        const { result } = renderHook(() =>
+          hooks.useQueryResultIds(
+            based.query('notes').where('userId', USER_ID_1).select('text')
+          )
+        );
+
+        expect(result.current).toEqual([NOTE_ID, NOTE_ID_2]);
+
+        based.deleteRow('notes', NOTE_ID_2);
+
+        expect(result.current).toEqual([NOTE_ID]);
+      });
+
+      it('sorted result ids', () => {
+        const { result } = renderHook(() =>
+          hooks.useQuerySortedResultIds(
+            based.query('users').select('name'),
+            'name'
+          )
+        );
+
+        expect(result.current).toEqual([USER_ID_2, USER_ID_1]);
+
+        based.setRow('users', USER_ID_3, {
+          name: 'Xavier',
+          age: 100,
+          id: USER_ID_3,
+          isAdmin: true,
+        });
+
+        expect(result.current).toEqual([USER_ID_2, USER_ID_1, USER_ID_3]);
+      });
     });
   });
 

@@ -168,6 +168,14 @@ describe('QueryBuilder', () => {
       .build();
 
     const result = qb.getResultTable();
+    type ResultRow = (typeof result)[string];
+
+    expectTypeOf<ResultRow>().toMatchTypeOf<{
+      theTagId: string;
+      userId: string;
+      tagName: string;
+    }>();
+
     expect(result).toEqual({
       'note1::tag1': {
         theTagId: 'tag1',
@@ -191,9 +199,6 @@ describe('QueryBuilder', () => {
       ({ where, group, select }) => {
         select('userId');
         select('isDraft');
-        // select('count');
-        // select('draftCount');
-        // where('userId', 'user1');
         group('userId', 'count').as('total');
         group('isDraft', (cells) => cells.filter(Boolean).length).as(
           'draftCount'
@@ -202,14 +207,11 @@ describe('QueryBuilder', () => {
       }
     );
 
-    console.log(db.queries.getResultTable('aggs'));
-
-    // const qb = db.query('notes').select('userId').group('userId').build();
     const qb = db
       .query('notes')
       .select('userId')
       .select('isDraft')
-      .group('userId', 'count')
+      .group('userId', 'count', 'total')
       .groupUsing(
         'isDraft',
         (cells) => cells.filter(Boolean).length,
@@ -218,6 +220,12 @@ describe('QueryBuilder', () => {
       .build();
 
     const result = qb.getResultTable();
-    console.log(result);
+
+    expectTypeOf<(typeof result)[string]>().toMatchTypeOf<{
+      total: number;
+      draftCount: number;
+    }>();
+
+    expect(result['0']).toEqual({ total: 3, draftCount: 1 });
   });
 });

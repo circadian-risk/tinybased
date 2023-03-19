@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
+import { useEffect, useMemo } from 'react';
 import {
   useResultTable,
   useResultRowIds,
@@ -8,18 +9,24 @@ import {
   useSortedRowIds as tbUseSortedRowIds,
   useLocalRowIds as tbUseLocalRowIds,
   useRemoteRowId as tbUseRemoteRowId,
+  useResultTable as tbUseResultTable,
   useResultSortedRowIds,
   useResultRow,
 } from 'tinybase/cjs/ui-react';
 import { SimpleAggregateQuery, SimpleQuery } from './queries';
+import { QueryBuilder } from './queries/QueryBuilder';
 import { TinyBased } from './tinybased';
 import {
   Aggregations,
   InferRelationShip,
+  InferRelationshipNames,
+  InferRelationships,
   InferSchema,
   OnlyStringKeys,
+  Relationships,
   SortOptions,
   Table,
+  TinyBaseSchema,
 } from './types';
 
 /**
@@ -75,8 +82,7 @@ export function useSimpleQuerySortedResultIds<
 
 export type TinyBasedReactHooks<
   TB extends TinyBased<any, any>,
-  TBSchema = InferSchema<TB>,
-  TRelationships = InferRelationShip<TB>
+  TBSchema extends TinyBaseSchema = InferSchema<TB>
 > = {
   useCell: <
     TTable extends keyof TBSchema,
@@ -116,12 +122,49 @@ export type TinyBasedReactHooks<
    *    Eg. for a database that had a relationship from 1 user -> many notes, would
    *    return the reactive set of all note ids that belonged to the user
    */
-  useLocalRowIds: (relationshipName: TRelationships, rowId: string) => string[];
+  useLocalRowIds: (
+    relationshipName: InferRelationshipNames<TB>,
+    rowId: string
+  ) => string[];
 
   useRemoteRowId: (
-    relationshipName: TRelationships,
+    relationshipName: InferRelationshipNames<TB>,
     rowId: string
   ) => string | undefined;
+
+  /**
+   * Reactively returns the results of the provided query builder. The easiest way to obtain a typesafe
+   * querybuilder is to use the `query(tableName)` method on a TinyBased instance
+   */
+  useQueryResult: <
+    TTable extends OnlyStringKeys<TBSchema>,
+    TResult extends Record<string, unknown>
+  >(
+    qb: QueryBuilder<TBSchema, InferRelationships<TB>, TTable, never, TResult>
+  ) => Record<string, TResult>;
+
+  useQueryResultIds: (qb: QueryBuilder<TBSchema>) => string[];
+
+  /**
+   * Reactively returns the row ids from the provided QueryBuilder using the supplied sort criteria
+   */
+  useQuerySortedResultIds: <
+    TStartTable extends OnlyStringKeys<TBSchema>,
+    TJoinedTables extends OnlyStringKeys<TBSchema>,
+    TResult extends Record<string, unknown>,
+    TSortBy extends OnlyStringKeys<TResult>
+  >(
+    qb: QueryBuilder<
+      TBSchema,
+      InferRelationships<TB>,
+      TStartTable,
+      TJoinedTables,
+      TResult,
+      TResult
+    >,
+    sortBy: TSortBy,
+    sortOptions?: SortOptions
+  ) => string[];
 };
 
 /**
@@ -129,8 +172,7 @@ export type TinyBasedReactHooks<
  */
 export function makeTinybasedHooks<
   TB extends TinyBased<any, any>,
-  TBSchema = InferSchema<TB>,
-  TRelationships = InferRelationShip<TB>
+  TBSchema extends TinyBaseSchema = InferSchema<TB>
 >(tinyBased: TB) {
   const store = tinyBased.store;
 
@@ -180,7 +222,10 @@ export function makeTinybasedHooks<
     );
   };
 
-  const useLocalRowIds = (relationshipName: TRelationships, rowId: string) => {
+  const useLocalRowIds = (
+    relationshipName: InferRelationshipNames<TB>,
+    rowId: string
+  ) => {
     return tbUseLocalRowIds(
       relationshipName as string,
       rowId,
@@ -188,12 +233,83 @@ export function makeTinybasedHooks<
     ) as string[];
   };
 
-  const useRemoteRowId = (relationshipName: TRelationships, rowId: string) => {
+  const useRemoteRowId = (
+    relationshipName: InferRelationshipNames<TB>,
+    rowId: string
+  ) => {
     return tbUseRemoteRowId(
       relationshipName as string,
       rowId,
       tinyBased.relationships
     ) as string;
+  };
+
+  const useQueryResult = <
+    TTable extends OnlyStringKeys<TBSchema>,
+    TResult extends Record<string, unknown>
+  >(
+    qb: QueryBuilder<TBSchema, InferRelationships<TB>, TTable, never, TResult>
+  ): Record<string, TResult> => {
+    const query = useMemo(() => qb.build(), [qb.queryId]);
+
+    useEffect(() => {
+      return () => {
+        tinyBased.queries.delQueryDefinition(query.queryId);
+      };
+    }, [tinyBased, query.queryId]);
+
+    return tbUseResultTable(query.queryId, tinyBased.queries) as Record<
+      string,
+      TResult
+    >;
+  };
+
+  const useQueryResultIds = (qb: QueryBuilder<TBSchema>) => {
+    const query = useMemo(() => qb.build(), [qb.queryId]);
+
+    useEffect(() => {
+      return () => {
+        tinyBased.queries.delQueryDefinition(query.queryId);
+      };
+    }, [tinyBased, query.queryId]);
+
+    return useResultRowIds(query.queryId, tinyBased.queries);
+  };
+
+  const useQuerySortedResultIds = <
+    TStartTable extends OnlyStringKeys<TBSchema>,
+    TJoinedTables extends OnlyStringKeys<TBSchema>,
+    TResult extends Record<string, unknown>,
+    TSortBy extends OnlyStringKeys<TResult>
+  >(
+    qb: QueryBuilder<
+      TBSchema,
+      InferRelationships<TB>,
+      TStartTable,
+      TJoinedTables,
+      TResult,
+      TResult
+    >,
+    sortBy: TSortBy,
+    sortOptions?: SortOptions
+  ) => {
+    const { descending = false, offset, limit } = sortOptions || {};
+    const query = useMemo(() => qb.build(), [qb.queryId]);
+
+    useEffect(() => {
+      return () => {
+        tinyBased.queries.delQueryDefinition(query.queryId);
+      };
+    }, [tinyBased, query.queryId]);
+
+    return useResultSortedRowIds(
+      query.queryId,
+      sortBy,
+      descending,
+      offset,
+      limit,
+      query.queries
+    );
   };
 
   return {
@@ -203,5 +319,8 @@ export function makeTinybasedHooks<
     useRow,
     useLocalRowIds,
     useRemoteRowId,
-  } as TinyBasedReactHooks<TB>;
+    useQueryResult,
+    useQueryResultIds,
+    useQuerySortedResultIds,
+  } as TinyBasedReactHooks<TB, TBSchema>;
 }
