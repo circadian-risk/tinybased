@@ -36,7 +36,7 @@ export class Query<TSelection extends Record<string, unknown>> {
 
   /**
    * Returns immediately with the current matching row selections for this query.
-   *    Represented as a Record of row id and the value as an object matching the query selection
+   * Represented as a Record of row id and the value as an object matching the query selection
    * Will not update reactively if the query changes
    */
   public getResultTable(): DeepPrettify<Record<string, TSelection>> {

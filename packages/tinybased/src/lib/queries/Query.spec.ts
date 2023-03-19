@@ -81,32 +81,26 @@ const sb = new SchemaBuilder()
     ],
   });
 
-// db.queries.setQueryDefinition(
-//   'manyToMany',
-//   'noteTags',
-//   ({ where, join, select }) => {
-//     join('notes', 'noteId');
-//     join('tags', 'tagId');
-//     where('notes', 'userId', 'user1');
-//     select('tags', 'name');
-//   }
-// );
-//
-// const answeredQuestionQuery = useMemo(() => {
-//   return based.queries.setQueryDefinition(
-//     `location_${locationId}_answered`,
-//     'assessment_answers',
-//     ({ select, where, join, group }) => {
-//       select('assessment_item_id');
-//       select('response');
-//       join('assessment_items', 'assessment_item_id');
-//       where('assessment_items', 'node_id', locationId);
-//       group('assessment_item_id', 'count').as('total');
-//       group('response', (cells) => cells.filter(Boolean).length).as('answered');
-//     }
-//   );
-// }, [based.queries, locationId]);
 describe('QueryBuilder', () => {
+  it('works with raw queries', async () => {
+    const db = await sb.build();
+
+    db.queries.setQueryDefinition(
+      'manyToMany',
+      'noteTags',
+      ({ where, join, select }) => {
+        join('notes', 'noteId');
+        join('tags', 'tagId');
+        where('notes', 'userId', 'user1');
+        select('tags', 'name');
+      }
+    );
+
+    const result = db.queries.getResultTable('manyToMany');
+    const tagNames = Object.values(result).map((v) => v['name']);
+    expect(tagNames).toEqual(['entertainment', 'work']);
+  });
+
   it('supports typesafe joins', async () => {
     const db = await sb.build();
 
@@ -192,20 +186,6 @@ describe('QueryBuilder', () => {
 
   it('supports aggregations', async () => {
     const db = await sb.build();
-
-    const rawQuery = db.queries.setQueryDefinition(
-      'aggs',
-      'notes',
-      ({ where, group, select }) => {
-        select('userId');
-        select('isDraft');
-        group('userId', 'count').as('total');
-        group('isDraft', (cells) => cells.filter(Boolean).length).as(
-          'draftCount'
-        );
-        // group('response', cells => cells.filter(Boolean).length).as('answered');
-      }
-    );
 
     const qb = db
       .query('notes')

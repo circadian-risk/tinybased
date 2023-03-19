@@ -73,7 +73,7 @@ export type HydrateConfig<
 > = () => Promise<TBSchema[K][]>;
 
 export type SchemaHydrators<TBSchema extends TinyBaseSchema> = {
-  [TTableName in keyof TBSchema]: HydrateConfig<TBSchema, TTableName>;
+  [TTableName in keyof TBSchema]?: HydrateConfig<TBSchema, TTableName>;
 };
 
 export type SchemaHydrator<TBSchema extends TinyBaseSchema> = {

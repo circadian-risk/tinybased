@@ -18,12 +18,10 @@ import { QueryBuilder } from './queries/QueryBuilder';
 import { TinyBased } from './tinybased';
 import {
   Aggregations,
-  InferRelationShip,
   InferRelationshipNames,
   InferRelationships,
   InferSchema,
   OnlyStringKeys,
-  Relationships,
   SortOptions,
   Table,
   TinyBaseSchema,

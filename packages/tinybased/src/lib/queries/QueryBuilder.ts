@@ -120,6 +120,9 @@ export class QueryBuilder<
     return this as any;
   }
 
+  /**
+   * Creates an aggreation on one of the selected fields
+   */
   group<TGroupCell extends OnlyStringKeys<TSelection>, TAlias extends string>(
     groupBy: TGroupCell,
     agg: Aggregations,
@@ -136,6 +139,10 @@ export class QueryBuilder<
     return this as any;
   }
 
+  /**
+   * Creates an aggregation on one of the seleted fields using a custom function to calculate
+   * the aggregate result
+   */
   groupUsing<
     TGroupCell extends OnlyStringKeys<TSelection>,
     Alias extends string
@@ -155,6 +162,9 @@ export class QueryBuilder<
     return this as any;
   }
 
+  /**
+   * Defines a where condition for equality on one of the starting table's cells
+   */
   where<TCellName extends OnlyStringKeys<TSchema[TStartTable]>>(
     cellName: TCellName,
     value: TSchema[TStartTable][TCellName]
@@ -247,9 +257,13 @@ export class QueryBuilder<
       .map((x) => x[0])
       .join('_')}`;
 
-    return `${this.startTable}-${select}-${selectAs}-${selectFrom}-${selectFromAs}-${whereFrom}-${group}-${groupUsing}`;
+    return `${this.startTable}-${select}-${selectAs}-${selectFrom}-${selectFromAs}-${where}-${whereFrom}-${group}-${groupUsing}`;
   }
 
+  /**
+   * Calling this method will actually attach it to the underlying Queries instance, effectively registering
+   * it with TinyBase
+   */
   build(): Query<TResult> {
     this.internalBuild();
     return new Query(this.queries, this.queryId);
@@ -288,12 +302,6 @@ export class QueryBuilder<
         this.groupUsings.forEach(([cell, using, alias]) =>
           group(cell, using as unknown as Aggregate).as(alias)
         );
-
-        // group('userId', 'count').as('count');
-        // select('count');
-        //
-        // this.groups.forEach((g) => group(g, 'count').as('count'));
-        // select('count');
       }
     );
   }
