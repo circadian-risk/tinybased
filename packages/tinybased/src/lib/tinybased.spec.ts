@@ -24,6 +24,28 @@ const baseBuilder = new SchemaBuilder().addTable(usersTable);
 
 describe('tinybased', () => {
   describe('Basic CRUD', () => {
+    it('should provide a typesafe wrapper for setTable', async () => {
+      const based = await baseBuilder.build();
+
+      based.setTable('users', [
+        {
+          age: 42,
+          id: '1',
+          isAdmin: true,
+          name: 'Jesse',
+        },
+      ]);
+
+      expect(based.getTable('users')).toEqual({
+        '1': {
+          age: 42,
+          id: '1',
+          isAdmin: true,
+          name: 'Jesse',
+        },
+      });
+    });
+
     it('should provide a typesafe wrapper for getTable', async () => {
       const based = await baseBuilder.build();
       based.setRow('users', '1', exampleUser);
