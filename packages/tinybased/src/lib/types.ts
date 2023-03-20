@@ -62,9 +62,10 @@ export type InferRelationshipNames<T> = T extends SchemaBuilder<
  */
 export type InferTinyBasedFromSchemaBuilder<SB> = SB extends SchemaBuilder<
   infer S,
+  infer RNs,
   infer R
 >
-  ? TinyBased<S, R>
+  ? TinyBased<S, RNs, R>
   : never;
 
 export type HydrateConfig<
