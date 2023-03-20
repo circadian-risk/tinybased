@@ -171,6 +171,25 @@ describe('Tinybased React', () => {
 
         expect(result.current).toEqual([USER_ID_2, USER_ID_1, USER_ID_3]);
       });
+
+      it('aggregations', () => {
+        const { result } = renderHook(() =>
+          hooks.useQueryResult(
+            based
+              .query('notes')
+              .select('userId')
+              .group('userId', 'count', 'total')
+          )
+        );
+
+        const agg = result.current['0'];
+
+        expectTypeOf(agg).toMatchTypeOf<{
+          total: number;
+        }>();
+
+        expect(agg.total).toEqual(3);
+      });
     });
   });
 

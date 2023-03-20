@@ -136,9 +136,17 @@ export type TinyBasedReactHooks<
    */
   useQueryResult: <
     TTable extends OnlyStringKeys<TBSchema>,
+    TSelection extends Record<string, unknown>,
     TResult extends Record<string, unknown>
   >(
-    qb: QueryBuilder<TBSchema, InferRelationships<TB>, TTable, never, TResult>
+    qb: QueryBuilder<
+      TBSchema,
+      InferRelationships<TB>,
+      TTable,
+      never,
+      TSelection,
+      TResult
+    >
   ) => Record<string, TResult>;
 
   useQueryResultIds: (qb: QueryBuilder<TBSchema>) => string[];
@@ -246,7 +254,14 @@ export function makeTinybasedHooks<
     TTable extends OnlyStringKeys<TBSchema>,
     TResult extends Record<string, unknown>
   >(
-    qb: QueryBuilder<TBSchema, InferRelationships<TB>, TTable, never, TResult>
+    qb: QueryBuilder<
+      TBSchema,
+      InferRelationships<TB>,
+      TTable,
+      never,
+      never,
+      TResult
+    >
   ): Record<string, TResult> => {
     const query = useMemo(() => qb.build(), [qb.queryId]);
 
