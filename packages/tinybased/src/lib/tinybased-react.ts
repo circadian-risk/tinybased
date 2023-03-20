@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { useEffect, useMemo } from 'react';
 import {
-  useResultTable,
   useResultRowIds,
   useRow as tbUseRow,
   useCell as tbUseCell,
@@ -11,72 +10,17 @@ import {
   useRemoteRowId as tbUseRemoteRowId,
   useResultTable as tbUseResultTable,
   useResultSortedRowIds,
-  useResultRow,
 } from 'tinybase/cjs/ui-react';
-import { SimpleAggregateQuery, SimpleQuery } from './queries';
 import { QueryBuilder } from './queries/QueryBuilder';
 import { TinyBased } from './tinybased';
 import {
-  Aggregations,
   InferRelationshipNames,
   InferRelationships,
   InferSchema,
   OnlyStringKeys,
   SortOptions,
-  Table,
   TinyBaseSchema,
 } from './types';
-
-/**
- * Given a simple query object, will subscribe to reactively update
- * results and return them as Record keyed by the matching row Id
- * with a value matching the queried cells
- */
-export const useSimpleQueryResultTable = <
-  TTable extends Table = {},
-  TCells extends OnlyStringKeys<TTable> = never
->(
-  query: SimpleQuery<TTable, TCells>
-): Record<string, Pick<TTable, TCells>> => {
-  return useResultTable(query.queryId, query.queries) as Record<
-    string,
-    Pick<TTable, TCells>
-  >;
-};
-
-export function useSimpleAggregateResult<TAggregation extends Aggregations>(
-  query: SimpleAggregateQuery<TAggregation>
-): { [key in TAggregation]?: number } {
-  return useResultRow(query.queryId, '0', query.queries) as any;
-}
-
-/**
- * Given a simple query object, will subscribe to reactively update
- * results of query and return the corresponding ids of the matching records
- */
-export function useSimpleQueryResultIds(query: SimpleQuery) {
-  return useResultRowIds(query.queryId, query.queries);
-}
-
-/**
- * Given a simple query object, will subscribe to reactively update
- * results of the query based on the provided sorting criteria and return
- * the corresponding Ids of the matching records
- */
-export function useSimpleQuerySortedResultIds<
-  TTable extends Table = {},
-  TCells extends OnlyStringKeys<TTable> = never
->(query: SimpleQuery<TTable, TCells>, sortBy: TCells, options?: SortOptions) {
-  const { descending = false, offset, limit } = options || {};
-  return useResultSortedRowIds(
-    query.queryId,
-    sortBy,
-    descending,
-    offset,
-    limit,
-    query.queries
-  );
-}
 
 export type TinyBasedReactHooks<
   TB extends TinyBased<any, any>,

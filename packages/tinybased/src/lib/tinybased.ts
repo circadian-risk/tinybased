@@ -9,7 +9,6 @@ import {
   createRelationships,
   createQueries,
 } from 'tinybase/cjs';
-import { SimpleQueryBuilder } from './queries';
 import {
   OnlyStringKeys,
   Prettify,
@@ -146,12 +145,6 @@ export class TinyBased<
         })
       );
     }
-  }
-
-  simpleQuery<TTable extends OnlyStringKeys<TBSchema>>(
-    table: TTable
-  ): SimpleQueryBuilder<TBSchema[TTable]> {
-    return new SimpleQueryBuilder(table, this.queries);
   }
 
   query<TTable extends OnlyStringKeys<TBSchema>>(
