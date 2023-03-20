@@ -181,6 +181,11 @@ export class TinyBased<
     rowId: string,
     toMerge: Partial<TBSchema[TTable]>
   ) {
+    if (!this.hasRow(table, rowId)) {
+      throw new Error(
+        `Attempted to merge row in ${table} with id ${rowId} but the targeted row does not exist`
+      );
+    }
     const current = this.getRow(table, rowId);
     this.setRow(table, rowId, { ...current, ...toMerge });
   }

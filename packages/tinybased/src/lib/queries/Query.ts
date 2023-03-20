@@ -1,5 +1,5 @@
 import { Queries } from 'tinybase/cjs/queries';
-import { DeepPrettify, OnlyStringKeys, SortOptions, Table } from '../types';
+import { DeepPrettify, OnlyStringKeys, SortOptions } from '../types';
 
 export class Query<TSelection extends Record<string, unknown>> {
   constructor(

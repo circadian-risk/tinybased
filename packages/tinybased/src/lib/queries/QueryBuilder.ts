@@ -40,7 +40,7 @@ export class QueryBuilder<
   TSchema extends TinyBaseSchema = {},
   TRelationships extends Relationships<TSchema> = {},
   TStartTable extends OnlyStringKeys<TSchema> = never,
-  TJoinedTables extends keyof TSchema = never,
+  TJoinedTables extends OnlyStringKeys<TSchema> = never,
   TSelection extends Record<string, unknown> = {},
   TResult extends Record<string, unknown> = {}
 > {

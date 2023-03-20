@@ -81,6 +81,13 @@ describe('tinybased', () => {
       });
     });
 
+    it('should throw an error if mergeRow is attempted on a non-existent row', async () => {
+      const based = await baseBuilder.build();
+      expect(() =>
+        based.mergeRow('users', USER_ID_1, exampleUser)
+      ).toThrowError();
+    });
+
     it('should handle nulls if they are provided through ejecting types with any', async () => {
       const based = await baseBuilder.build();
       based.setRow('users', USER_ID_1, exampleUser);
