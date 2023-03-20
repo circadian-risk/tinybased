@@ -133,15 +133,14 @@ export class TinyBased<
     if (this.hydrators.size > 0) {
       await Promise.all(
         Array.from(this.hydrators).map(async ([tableName, hydrator]) => {
-          const entries = await hydrator();
+          const tableId = tableName as OnlyStringKeys<TBSchema>;
+          const rows = (await hydrator()) as TBSchema[typeof tableId][];
           const table = this.tables.get(tableName);
           if (!table) {
             return;
           }
-          this.store.setTable(
-            tableName,
-            keyBy(entries, (e) => table.composeKey(e))
-          );
+
+          this.setTable(tableId, rows);
         })
       );
     }
@@ -230,6 +229,27 @@ export class TinyBased<
       string,
       Prettify<TBSchema[TTable]>
     >;
+  }
+
+  /**
+   * Sets the rows for a table. This will overwrite any existing rows
+   *
+   * @param {TTable} tableName - The name of the table
+   * @param {TBSchema[TTable][]} rows - An array of rows which match the type of the table
+   */
+  setTable<TTable extends OnlyStringKeys<TBSchema>>(
+    tableName: TTable,
+    rows: TBSchema[TTable][]
+  ) {
+    const table = this.tables.get(tableName);
+    if (!table) {
+      throw new Error(`Tried to set rows for non-existent table ${tableName}`);
+    }
+
+    return this.store.setTable(
+      tableName,
+      keyBy(rows, (e) => table.composeKey(e))
+    );
   }
 
   getCell<
