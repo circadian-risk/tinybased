@@ -11,11 +11,13 @@ import {
   SchemaPersister,
   TableDefs,
   TinyBaseSchema,
+  Relationships,
 } from './types';
 
 export class SchemaBuilder<
   TBSchema extends TinyBaseSchema = {},
-  TRelationships extends string = never
+  TRelationshipNames extends string = never,
+  TRelationships extends Relationships<TBSchema> = {}
 > {
   public readonly tables: Map<
     string,
@@ -39,7 +41,12 @@ export class SchemaBuilder<
     tableFrom: TTableFrom,
     tableTo: TTableTo,
     cellFrom: TCellFrom
-  ): SchemaBuilder<TBSchema, TRelationships | TRelationshipName> {
+  ): SchemaBuilder<
+    TBSchema,
+    TRelationshipNames | TRelationshipName,
+    TRelationships &
+      Record<TRelationshipName, { from: TTableFrom; to: TTableTo }>
+  > {
     this.relationshipDefinitions.push({
       name,
       from: tableFrom,
@@ -49,7 +56,7 @@ export class SchemaBuilder<
 
     return this as unknown as SchemaBuilder<
       TBSchema,
-      TRelationships | TRelationshipName
+      TRelationshipNames | TRelationshipName
     >;
   }
 
@@ -75,8 +82,10 @@ export class SchemaBuilder<
     return this;
   }
 
-  public async build(): Promise<TinyBased<TBSchema, TRelationships>> {
-    const tb = new TinyBased<TBSchema, TRelationships>(
+  public async build(): Promise<
+    TinyBased<TBSchema, TRelationshipNames, TRelationships>
+  > {
+    const tb = new TinyBased<TBSchema, TRelationshipNames, TRelationships>(
       this.tables,
       this.relationshipDefinitions
     );
@@ -132,7 +141,7 @@ export class SchemaBuilder<
 
     tb.init();
 
-    return tb as TinyBased<TBSchema, TRelationships>;
+    return tb as TinyBased<TBSchema, TRelationshipNames>;
   }
 
   public onRowAddedOrUpdated(handler: RowChangeHandler<TBSchema>) {

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 import { SchemaBuilder } from './SchemaBuilder';
 import { CellSchema } from './TableBuilder';
 import { TinyBased } from './tinybased';
@@ -26,6 +27,36 @@ export type InferRelationShip<T> = T extends SchemaBuilder<infer _S, infer R>
   ? R
   : never;
 
+export type Relationship<T extends TinyBaseSchema = {}> = {
+  from: OnlyStringKeys<T>;
+  to: OnlyStringKeys<T>;
+};
+
+export type Relationships<T extends TinyBaseSchema = {}> = Record<
+  string,
+  Relationship<T>
+>;
+
+export type InferRelationships<T> = T extends SchemaBuilder<
+  infer _T,
+  infer _RN,
+  infer R
+>
+  ? R
+  : T extends TinyBased<infer _T, infer _RN, infer R>
+  ? R
+  : never;
+
+export type InferRelationshipNames<T> = T extends SchemaBuilder<
+  infer _T,
+  infer RN,
+  infer _R
+>
+  ? RN
+  : T extends TinyBased<infer _T, infer RN, infer _R>
+  ? RN
+  : never;
+
 /**
  * Given a typeof SchemaBuilder instance, returns the TinyBased type that would be created from it
  */
@@ -42,7 +73,7 @@ export type HydrateConfig<
 > = () => Promise<TBSchema[K][]>;
 
 export type SchemaHydrators<TBSchema extends TinyBaseSchema> = {
-  [TTableName in keyof TBSchema]: HydrateConfig<TBSchema, TTableName>;
+  [TTableName in keyof TBSchema]?: HydrateConfig<TBSchema, TTableName>;
 };
 
 export type SchemaHydrator<TBSchema extends TinyBaseSchema> = {
