@@ -95,8 +95,8 @@ export type SchemaPersister<TBSchema extends TinyBaseSchema> = {
   getTable: <TTableName extends keyof TBSchema>(
     tableName: TTableName
   ) => Promise<TBSchema[TTableName][]> | TBSchema[TTableName][];
-  onRowAddedOrUpdated: RowChangeHandler<TBSchema>;
-  onRowRemoved: RowChangeHandler<TBSchema>;
+  onRowAddedOrUpdated?: RowChangeHandler<TBSchema>;
+  onRowRemoved?: RowChangeHandler<TBSchema>;
 };
 
 export type Aggregations = 'avg' | 'count' | 'sum' | 'max' | 'min';

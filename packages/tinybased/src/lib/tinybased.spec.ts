@@ -366,11 +366,10 @@ describe('tinybased', () => {
       },
     });
 
-    basedSchema.addPersister(TestPersister('test_db'));
-
     beforeEach(() => {
       mockStorage = {};
       onRowAddedOrUpdated.mockClear();
+      basedSchema.addPersister(TestPersister('test_db'));
     });
 
     it('calls onInit on build and can access schema', async () => {
