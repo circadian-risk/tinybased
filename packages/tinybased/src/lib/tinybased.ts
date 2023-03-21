@@ -252,6 +252,28 @@ export class TinyBased<
     );
   }
 
+  /**
+   * Used to set many rows in a table. Will overwrite any conflicting values.
+   *
+   * @param {TTable} tableName - The name of the table
+   * @param {TBSchema[TTable][]} rows - An array of rows which match the type of the table
+   */
+  bulkUpsert<TTable extends OnlyStringKeys<TBSchema>>(
+    tableName: TTable,
+    rows: TBSchema[TTable][]
+  ) {
+    const table = this.tables.get(tableName);
+    if (!table) {
+      throw new Error(`Tried to set rows for non-existent table ${tableName}`);
+    }
+
+    this.store.transaction(() => {
+      rows.forEach((row) => {
+        this.store.setRow(tableName, table.composeKey(row), row);
+      });
+    });
+  }
+
   getCell<
     TTable extends OnlyStringKeys<TBSchema>,
     TCell extends OnlyStringKeys<TBSchema[TTable]>
