@@ -135,11 +135,16 @@ export class SchemaBuilder<
     });
 
     this.persisters.forEach((persister) => {
-      tb.events.onRowAddedOrUpdated.add(persister.onRowAddedOrUpdated);
-      tb.events.onRowRemoved.add(persister.onRowRemoved);
+      if (persister.onRowAddedOrUpdated) {
+        tb.events.onRowAddedOrUpdated.add(persister.onRowAddedOrUpdated);
+      }
+      if (persister.onRowRemoved) {
+        tb.events.onRowRemoved?.add(persister.onRowRemoved);
+      }
     });
 
     tb.init();
+    this.persisters = new Set();
 
     return tb as TinyBased<TBSchema, TRelationshipNames>;
   }
