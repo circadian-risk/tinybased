@@ -80,21 +80,26 @@ export class TableBuilder<
     ) as TableSchema<keyof TCells>;
   }
 
-  add<TCellName extends string, TCellType extends CellStringType>(
+  add<
+    TCellName extends string,
+    TCellType extends CellStringType,
+    SpecifiedType extends CellTypeMap[TCellType]
+  >(
     name: TCellName,
     type: TCellType
-  ): TableBuilder<TName, TCells & Record<TCellName, CellTypeMap[TCellType]>> {
+  ): TableBuilder<TName, TCells & Record<TCellName, SpecifiedType>> {
     this._cells.push({ name, type });
     return this;
   }
 
-  addOptional<TCellName extends string, TCellType extends CellStringType>(
+  addOptional<
+    TCellName extends string,
+    TCellType extends CellStringType,
+    SpecifiedType extends CellTypeMap[TCellType]
+  >(
     name: TCellName,
     type: TCellType
-  ): TableBuilder<
-    TName,
-    TCells & Partial<Record<TCellName, CellTypeMap[TCellType]>>
-  > {
+  ): TableBuilder<TName, TCells & Partial<Record<TCellName, SpecifiedType>>> {
     this._cells.push({ name, type, optional: true });
 
     return this;
