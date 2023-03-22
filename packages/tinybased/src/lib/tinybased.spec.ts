@@ -96,6 +96,24 @@ describe('tinybased', () => {
       expect(age2).toBeUndefined();
     });
 
+    it('should handle multiple row insert', async () => {
+      const based = await baseBuilder.build();
+      based.setRow('users', USER_ID_1, {
+        ...exampleUser,
+        name: 'Not Jesse',
+      });
+
+      const newUsers = [
+        { id: USER_ID_1, name: 'Jesse', age: 33, isAdmin: false },
+        { id: USER_ID_2, name: 'Deep', age: 25, isAdmin: false },
+      ];
+
+      based.bulkUpsert('users', newUsers);
+
+      expect(based.getRow('users', USER_ID_1)).toEqual(newUsers[0]);
+      expect(based.getRow('users', USER_ID_2)).toEqual(newUsers[1]);
+    });
+
     it('should be able to merge rows with partial data', async () => {
       const based = await baseBuilder.build();
       based.setRow('users', USER_ID_1, exampleUser);
