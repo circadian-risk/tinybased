@@ -23,6 +23,26 @@ const exampleNote = {
 const baseBuilder = new SchemaBuilder().addTable(usersTable);
 
 describe('tinybased', () => {
+  describe('Key-Value API', () => {
+    it('Can be defined', async () => {
+      const builder = new SchemaBuilder()
+        .addValue('online', 'boolean')
+        .addValue('userId', 'string');
+
+      const built = await builder.build();
+
+      built.setValue('online', false);
+
+      expect(built.getValue('online')).toEqual(false);
+
+      built.setValue('online', true);
+
+      expect(built.getValue('online')).toEqual(true);
+
+      expect(built.getValue('userId')).toBeUndefined();
+    });
+  });
+
   describe('Basic CRUD', () => {
     it('should provide a typesafe wrapper for setTable', async () => {
       const based = await baseBuilder.build();

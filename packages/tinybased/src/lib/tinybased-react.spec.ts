@@ -8,26 +8,36 @@ import {
 } from '../fixture/database';
 import { makeTinybasedHooks, TinyBasedReactHooks } from './tinybased-react';
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook } from '@testing-library/react-hooks';
 
 describe('Tinybased React', () => {
   let based: Awaited<ReturnType<typeof makeTinyBasedTestFixture>>;
-
   let hooks: TinyBasedReactHooks<typeof based>;
   beforeEach(async () => {
     based = await makeTinyBasedTestFixture();
     hooks = makeTinybasedHooks(based);
   });
   describe('makeHooks', () => {
+    it('useValue', () => {
+      const { result } = renderHook(() => hooks.useValue('online'));
+      expect(result.current).toEqual(undefined);
+
+      based.setValue('online', true);
+
+      expect(result.current).toEqual(true);
+
+      based.setValue('online', false);
+
+      expect(result.current).toEqual(false);
+    });
+
     it('useCell', () => {
       const { result } = renderHook(() =>
         hooks.useCell('users', 'user2', 'name')
       );
       expect(result.current).toEqual('Bob');
 
-      act(() => {
-        based.setCell('users', 'user2', 'name', 'Bob Ross');
-      });
+      based.setCell('users', 'user2', 'name', 'Bob Ross');
 
       expect(result.current).toEqual('Bob Ross');
     });
