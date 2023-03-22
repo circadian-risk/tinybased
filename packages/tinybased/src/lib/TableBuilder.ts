@@ -1,26 +1,10 @@
-import { OnlyStringKeys, Prettify } from './types';
-
-interface CellTypeMap {
-  string: string;
-  number: number;
-  boolean: boolean;
-}
-
-/**
- * Supported Cell Types as string literals
- */
-export type CellStringType = 'string' | 'boolean' | 'number';
-
-/**
- * Maps Cell type to their corresponding CellStringType string literal.
- */
-export type CellTypeToString<T> = T extends string
-  ? 'string'
-  : T extends boolean
-  ? 'boolean'
-  : T extends number
-  ? 'number'
-  : never;
+import {
+  CellStringType,
+  CellTypeMap,
+  CellTypeToString,
+  OnlyStringKeys,
+  Prettify,
+} from './types';
 
 /**
  * Given an Object, convert it to its CellStringType representation.

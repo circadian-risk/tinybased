@@ -17,6 +17,7 @@ import {
   SchemaHydrator,
   TinyBaseSchema,
   Relationships,
+  Table,
 } from './types';
 import keyBy from 'lodash/keyBy';
 import { TableBuilder } from './TableBuilder';
@@ -29,7 +30,8 @@ const makeTableRowCountMetricName = (tableName: string) =>
 export class TinyBased<
   TBSchema extends TinyBaseSchema = {},
   TRelationshipNames extends string = never,
-  TRelationships extends Relationships<TBSchema> = {}
+  TRelationships extends Relationships<TBSchema> = {},
+  TKeyValueSchema extends Table = {}
 > {
   public readonly store: Store;
   public readonly metrics: Metrics;
@@ -287,5 +289,18 @@ export class TinyBased<
 
   getRemoteRowId(relationshipName: TRelationshipNames, rowId: string) {
     return this.relationships.getRemoteRowId(relationshipName, rowId);
+  }
+
+  getValue<TKey extends OnlyStringKeys<TKeyValueSchema>>(
+    key: TKey
+  ): TKeyValueSchema[TKey] | undefined {
+    return this.store.getValue(key) as TKeyValueSchema[TKey] | undefined;
+  }
+
+  setValue<
+    TKey extends OnlyStringKeys<TKeyValueSchema>,
+    TValue extends TKeyValueSchema[TKey]
+  >(key: TKey, value: TValue) {
+    return this.store.setValue(key, value);
   }
 }
