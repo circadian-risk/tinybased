@@ -1,4 +1,10 @@
-import { InferTable, SchemaBuilder, TableBuilder } from '../';
+import {
+  InferKeyValueSchema,
+  InferTable,
+  SchemaBuilder,
+  TableBuilder,
+  TinyBaseSchema,
+} from '../';
 
 export const usersTable = new TableBuilder('users')
   .add('id', 'string')
@@ -86,6 +92,7 @@ export async function makeTinyBasedTestFixture() {
   const tinyBasedSample = await new SchemaBuilder()
     .addTable(usersTable)
     .addTable(notesTable)
+    .addValue('online', 'boolean')
     .defineHydrators({
       users: () => Promise.resolve([USER_1, USER_2]),
       notes: () => Promise.resolve([NOTE_1, NOTE_2, NOTE_3]),

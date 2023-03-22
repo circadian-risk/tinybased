@@ -9,6 +9,17 @@ export type TinyBaseSchema = Record<string, Table>;
 export type TableNames<TBSchema extends TinyBaseSchema> =
   OnlyStringKeys<TBSchema>;
 
+export type InferKeyValueSchema<T> = T extends SchemaBuilder<
+  infer _S,
+  infer _Rn,
+  infer _R,
+  infer KV
+>
+  ? KV
+  : T extends TinyBased<infer _S, infer _Rn, infer _R, infer KV>
+  ? KV
+  : never;
+
 export type InferSchema<T> = T extends SchemaBuilder<infer S, infer _R>
   ? S
   : T extends TinyBased<infer S, infer _R>
@@ -144,3 +155,25 @@ export type DeepPrettify<T> = T extends object
   : T extends Array<infer U>
   ? Array<DeepPrettify<U>>
   : T;
+
+/**
+ * Supported Cell Types as string literals
+ */
+export type CellStringType = 'string' | 'boolean' | 'number';
+
+/**
+ * Maps Cell type to their corresponding CellStringType string literal.
+ */
+export type CellTypeToString<T> = T extends string
+  ? 'string'
+  : T extends boolean
+  ? 'boolean'
+  : T extends number
+  ? 'number'
+  : never;
+
+export interface CellTypeMap {
+  string: string;
+  number: number;
+  boolean: boolean;
+}

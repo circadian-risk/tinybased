@@ -10,22 +10,30 @@ import {
   useRemoteRowId as tbUseRemoteRowId,
   useResultTable as tbUseResultTable,
   useResultSortedRowIds,
+  useValue as tbUseValue,
 } from 'tinybase/cjs/ui-react';
 import { QueryBuilder } from './queries/QueryBuilder';
 import { TinyBased } from './tinybased';
 import {
+  InferKeyValueSchema,
   InferRelationshipNames,
   InferRelationships,
   InferSchema,
   OnlyStringKeys,
   SortOptions,
+  Table,
   TinyBaseSchema,
 } from './types';
 
 export type TinyBasedReactHooks<
-  TB extends TinyBased<any, any>,
-  TBSchema extends TinyBaseSchema = InferSchema<TB>
+  TB extends TinyBased<any, any, any, any>,
+  TBSchema extends TinyBaseSchema = InferSchema<TB>,
+  TKeyValueSchema extends Table = InferKeyValueSchema<TB>
 > = {
+  useValue: <TKey extends OnlyStringKeys<TKeyValueSchema>>(
+    key: TKey
+  ) => TKeyValueSchema[TKey] | undefined;
+
   useCell: <
     TTable extends keyof TBSchema,
     TCell extends keyof TBSchema[TTable]
@@ -122,7 +130,8 @@ export type TinyBasedReactHooks<
  */
 export function makeTinybasedHooks<
   TB extends TinyBased<any, any>,
-  TBSchema extends TinyBaseSchema = InferSchema<TB>
+  TBSchema extends TinyBaseSchema = InferSchema<TB>,
+  TKeyValueSchema extends Table = InferKeyValueSchema<TB>
 >(tinyBased: TB) {
   const store = tinyBased.store;
 
@@ -269,6 +278,14 @@ export function makeTinybasedHooks<
     );
   };
 
+  const useValue = <TKey extends OnlyStringKeys<TKeyValueSchema>>(
+    key: TKey
+  ): TKeyValueSchema[TKey] | undefined => {
+    return tbUseValue(key, tinyBased.store) as
+      | TKeyValueSchema[TKey]
+      | undefined;
+  };
+
   return {
     useCell,
     useRowIds,
@@ -279,5 +296,6 @@ export function makeTinybasedHooks<
     useQueryResult,
     useQueryResultIds,
     useQuerySortedResultIds,
-  } as TinyBasedReactHooks<TB, TBSchema>;
+    useValue,
+  } as TinyBasedReactHooks<TB, TBSchema, TKeyValueSchema>;
 }

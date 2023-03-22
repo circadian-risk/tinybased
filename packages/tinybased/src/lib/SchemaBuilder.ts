@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
+import { Schema } from '../fixture/database';
 import { TableBuilder } from './TableBuilder';
 import { TinyBased } from './tinybased';
 import {
@@ -12,12 +13,17 @@ import {
   TableDefs,
   TinyBaseSchema,
   Relationships,
+  Table,
+  Cell,
+  CellTypeMap,
+  CellStringType,
 } from './types';
 
 export class SchemaBuilder<
   TBSchema extends TinyBaseSchema = {},
   TRelationshipNames extends string = never,
-  TRelationships extends Relationships<TBSchema> = {}
+  TRelationships extends Relationships<TBSchema> = {},
+  TKeyValueSchema extends Table = {}
 > {
   public readonly tables: Map<
     string,
@@ -45,7 +51,8 @@ export class SchemaBuilder<
     TBSchema,
     TRelationshipNames | TRelationshipName,
     TRelationships &
-      Record<TRelationshipName, { from: TTableFrom; to: TTableTo }>
+      Record<TRelationshipName, { from: TTableFrom; to: TTableTo }>,
+    TKeyValueSchema
   > {
     this.relationshipDefinitions.push({
       name,
@@ -54,22 +61,37 @@ export class SchemaBuilder<
       cell: cellFrom,
     });
 
-    return this as unknown as SchemaBuilder<
-      TBSchema,
-      TRelationshipNames | TRelationshipName
-    >;
+    return this as any;
   }
 
   public addTable<TName extends string, TCells extends Record<string, unknown>>(
     tableBuilder: TableBuilder<TName, TCells>
-  ) {
+  ): SchemaBuilder<
+    TBSchema & Record<TName, TCells>,
+    TRelationshipNames,
+    TRelationships,
+    TKeyValueSchema
+  > {
     if (this.tables.has(tableBuilder.tableName)) {
       throw new Error(`Table ${tableBuilder.tableName} already defined`);
     }
 
     this.tables.set(tableBuilder.tableName, tableBuilder);
 
-    return this as unknown as SchemaBuilder<TBSchema & Record<TName, TCells>>;
+    return this as any;
+  }
+
+  public addValue<TKeyName extends string, TValueType extends CellStringType>(
+    _key: TKeyName,
+    _type: TValueType
+  ): SchemaBuilder<
+    TBSchema,
+    TRelationshipNames,
+    TRelationships,
+    TKeyValueSchema & Record<TKeyName, CellTypeMap[TValueType]>
+  > {
+    // TODO
+    return this as any;
   }
 
   public defineHydrators(hydrators: SchemaHydrators<TBSchema>) {
@@ -83,12 +105,14 @@ export class SchemaBuilder<
   }
 
   public async build(): Promise<
-    TinyBased<TBSchema, TRelationshipNames, TRelationships>
+    TinyBased<TBSchema, TRelationshipNames, TRelationships, TKeyValueSchema>
   > {
-    const tb = new TinyBased<TBSchema, TRelationshipNames, TRelationships>(
-      this.tables,
-      this.relationshipDefinitions
-    );
+    const tb = new TinyBased<
+      TBSchema,
+      TRelationshipNames,
+      TRelationships,
+      TKeyValueSchema
+    >(this.tables, this.relationshipDefinitions);
 
     // Init persisters
 
@@ -146,7 +170,7 @@ export class SchemaBuilder<
     tb.init();
     this.persisters = new Set();
 
-    return tb as TinyBased<TBSchema, TRelationshipNames>;
+    return tb as any;
   }
 
   public onRowAddedOrUpdated(handler: RowChangeHandler<TBSchema>) {
