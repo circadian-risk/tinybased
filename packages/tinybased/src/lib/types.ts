@@ -32,10 +32,13 @@ export type InferTableNames<T> = T extends SchemaBuilder<infer _S, infer _R>
   ? TableNames<InferSchema<T>>
   : never;
 
-export type InferRelationShip<T> = T extends SchemaBuilder<infer _S, infer R>
-  ? R
-  : T extends TinyBased<infer _S, infer R>
-  ? R
+export type InferRelationshipNames<T> = T extends SchemaBuilder<
+  infer _T,
+  infer RN
+>
+  ? RN
+  : T extends TinyBased<infer _T, infer RN>
+  ? RN
   : never;
 
 export type Relationship<T extends TinyBaseSchema = {}> = {
@@ -58,25 +61,16 @@ export type InferRelationships<T> = T extends SchemaBuilder<
   ? R
   : never;
 
-export type InferRelationshipNames<T> = T extends SchemaBuilder<
-  infer _T,
-  infer RN,
-  infer _R
->
-  ? RN
-  : T extends TinyBased<infer _T, infer RN, infer _R>
-  ? RN
-  : never;
-
 /**
  * Given a typeof SchemaBuilder instance, returns the TinyBased type that would be created from it
  */
 export type InferTinyBasedFromSchemaBuilder<SB> = SB extends SchemaBuilder<
   infer S,
   infer RNs,
-  infer R
+  infer R,
+  infer KV
 >
-  ? TinyBased<S, RNs, R>
+  ? TinyBased<S, RNs, R, KV>
   : never;
 
 export type HydrateConfig<
