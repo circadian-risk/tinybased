@@ -1,5 +1,10 @@
 import { notesTable, usersTable } from '../fixture/database';
-import { InferSchema, SchemaPersister, Table } from './types';
+import {
+  InferSchema,
+  InferTinyBasedFromSchemaBuilder,
+  SchemaPersister,
+  Table,
+} from './types';
 import { TableBuilder } from './TableBuilder';
 import { SchemaBuilder } from './SchemaBuilder';
 
@@ -27,7 +32,7 @@ const twoValueBuilder = new SchemaBuilder()
 
 describe('tinybased', () => {
   describe('Key-Value API', () => {
-    let twoValueBased!: Awaited<ReturnType<(typeof twoValueBuilder)['build']>>;
+    let twoValueBased!: InferTinyBasedFromSchemaBuilder<typeof twoValueBuilder>;
     beforeEach(async () => {
       twoValueBased = await twoValueBuilder.build();
     });
