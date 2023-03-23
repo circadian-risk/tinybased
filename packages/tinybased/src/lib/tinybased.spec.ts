@@ -1,5 +1,10 @@
 import { notesTable, usersTable } from '../fixture/database';
-import { InferSchema, SchemaPersister, Table } from './types';
+import {
+  InferSchema,
+  InferTinyBasedFromSchemaBuilder,
+  SchemaPersister,
+  Table,
+} from './types';
 import { TableBuilder } from './TableBuilder';
 import { SchemaBuilder } from './SchemaBuilder';
 
@@ -21,25 +26,33 @@ const exampleNote = {
 };
 
 const baseBuilder = new SchemaBuilder().addTable(usersTable);
+const twoValueBuilder = new SchemaBuilder()
+  .addValue('online', 'boolean')
+  .addValue('userId', 'string');
 
 describe('tinybased', () => {
   describe('Key-Value API', () => {
-    it('Can be defined', async () => {
-      const builder = new SchemaBuilder()
-        .addValue('online', 'boolean')
-        .addValue('userId', 'string');
+    let twoValueBased!: InferTinyBasedFromSchemaBuilder<typeof twoValueBuilder>;
+    beforeEach(async () => {
+      twoValueBased = await twoValueBuilder.build();
+    });
+    it('Can be defined', () => {
+      twoValueBased.setValue('online', false);
 
-      const built = await builder.build();
+      expect(twoValueBased.getValue('online')).toEqual(false);
 
-      built.setValue('online', false);
+      twoValueBased.setValue('online', true);
 
-      expect(built.getValue('online')).toEqual(false);
+      expect(twoValueBased.getValue('online')).toEqual(true);
 
-      built.setValue('online', true);
+      expect(twoValueBased.getValue('userId')).toBeUndefined();
+    });
 
-      expect(built.getValue('online')).toEqual(true);
-
-      expect(built.getValue('userId')).toBeUndefined();
+    it('Can be deleted', () => {
+      twoValueBased.setValue('online', false);
+      expect(twoValueBased.getValue('online')).toEqual(false);
+      twoValueBased.deleteValue('online');
+      expect(twoValueBased.getValue('online')).toBeUndefined();
     });
   });
 
