@@ -29,6 +29,9 @@ describe('Tinybased React', () => {
       based.setValue('online', false);
 
       expect(result.current).toEqual(false);
+
+      based.deleteValue('online');
+      expect(result.current).toBeUndefined();
     });
 
     it('useCell', () => {

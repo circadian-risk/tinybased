@@ -319,6 +319,10 @@ export class TinyBased<
     return this.store.getValue(key) as TKeyValueSchema[TKey] | undefined;
   }
 
+  deleteValue<TKey extends OnlyStringKeys<TKeyValueSchema>>(key: TKey) {
+    return this.store.delValue(key);
+  }
+
   setValue<
     TKey extends OnlyStringKeys<TKeyValueSchema>,
     TValue extends TKeyValueSchema[TKey]
