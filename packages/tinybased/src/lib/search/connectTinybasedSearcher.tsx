@@ -57,7 +57,7 @@ export const connectTinybasedSearcher = async <
   >;
 
   // upsert handler
-  tinybased.onRowAddedOrUpdated(async (table, rowId, entity) => {
+  tinybased.onAnyRowAddedOrUpdated(async (table, rowId, entity) => {
     if (entity) {
       const existing = await searcher.getByID(table as any, rowId);
       if (existing) {
@@ -74,7 +74,7 @@ export const connectTinybasedSearcher = async <
   }, true);
 
   // removed handler
-  tinybased.onRowRemoved(async (table, rowId, _entity) => {
+  tinybased.onAnyRowRemoved(async (table, rowId, _entity) => {
     await searcher.remove(table as any, rowId);
     tinybased.store.setValue(
       SEARCH_LAST_UPDATED_AT(table),

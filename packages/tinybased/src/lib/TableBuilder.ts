@@ -55,6 +55,13 @@ export class TableBuilder<
   }
 
   /**
+   * Returns the names of all of the cells that are attached to this Table
+   */
+  public get cellNames() {
+    return this._cells.map((c) => c.name);
+  }
+
+  /**
    * Returns a schema object
    */
   public get schema(): TableSchema<keyof TCells> {

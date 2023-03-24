@@ -18,8 +18,11 @@ import {
   TinyBaseSchema,
   Relationships,
   Table,
+  RowChange,
+  CellChanges,
 } from './types';
 import keyBy from 'lodash/keyBy';
+import fromPairs from 'lodash/fromPairs';
 import { TableBuilder } from './TableBuilder';
 import { QueryBuilder } from './queries/QueryBuilder';
 
@@ -97,7 +100,14 @@ export class TinyBased<
     }
   }
 
-  public onRowAddedOrUpdated(
+  /**
+   * Registers an event handler that will be called any time any row from any table is
+   * added or updated. This is useful for sync operations like persisting TinyBase changes to a disk storage
+   *
+   * @param handler - The function to handle the change
+   * @param [canMutate] - Whether or not this handler can make changes back to the TinyBase instance as part of handling the event
+   */
+  public onAnyRowAddedOrUpdated(
     handler: RowChangeHandler<TBSchema>,
     canMutate = false
   ) {
@@ -115,7 +125,17 @@ export class TinyBased<
     );
   }
 
-  public onRowRemoved(handler: RowChangeHandler<TBSchema>, canMutate = false) {
+  /**
+   * Registers an event handler that will be called any time any row from any table is removed.
+   * This is useful for sync operations like persisting TinyBase changes to a disk storage
+   *
+   * @param - The function to handle the change
+   * @param [canMutate] - Whether or not this handler can make changes back to the TinyBase instance as part of handling the event
+   */
+  public onAnyRowRemoved(
+    handler: RowChangeHandler<TBSchema>,
+    canMutate = false
+  ) {
     this.store.addRowListener(
       null,
       null,
@@ -126,6 +146,70 @@ export class TinyBased<
       },
       canMutate
     );
+  }
+
+  /**
+   * Registers an event handler that will be called any time there is any change to a row in the provided table.
+   * Information about the type of change will be provided to the handler to help simplify writing business logic
+   *
+   * @param table - The name of the table to listen to changes on
+   * @param {(change: RowChange<TBSchema[TTable]>) => void} handler - The handler function that will be called whenever a change occurs to a row in the table
+   * @param [canMutate] - Whether or not the provided handler can make changes back to the TinyBase instance as part of handling the event
+   * @returns - The id of the registered listener which can be used to unsubscribe later using tinybase.store.delListener
+   */
+  public onRowChange<TTable extends OnlyStringKeys<TBSchema>>(
+    table: TTable,
+    handler: (change: RowChange<TBSchema[TTable]>) => void,
+    canMutate = false
+  ) {
+    const listenerId = this.store.addRowListener(
+      table,
+      null,
+      (_store, _table, rowId, getCellChange) => {
+        const operationType: RowChange<TBSchema[TTable]> = (() => {
+          if (!this.store.hasRow(table, rowId)) {
+            return { type: 'delete', rowId };
+          }
+
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+          const tableDef = this.tables.get(table)!;
+          const cols = tableDef.cellNames;
+
+          const row = this.getRow(table, rowId);
+
+          const cellChangePairs = cols.map((col) => {
+            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+            const [isChanged, oldValue, newValue] = getCellChange!(
+              table,
+              rowId,
+              col
+            );
+
+            return [col, { isChanged, oldValue, newValue }] as const;
+          });
+
+          // If all the cells where previously undefined we know this is a brand new row
+          const isInsert = cellChangePairs.every(
+            ([_c, change]) => change.oldValue === undefined
+          );
+
+          return isInsert
+            ? { type: 'insert', row }
+            : {
+                type: 'update',
+                row,
+                changes: fromPairs(
+                  cellChangePairs as unknown as Array<[string, {}]>
+                ) as unknown as CellChanges<TBSchema[TTable]>,
+              };
+        })();
+
+        handler(operationType);
+      },
+      canMutate
+    );
+
+    return listenerId;
   }
 
   /**
