@@ -192,6 +192,84 @@ describe('tinybased', () => {
     });
   });
 
+  describe('Listeners', () => {
+    it('correctly handles created events', async () => {
+      const sb = new SchemaBuilder().addTable(
+        new TableBuilder('row').add('id', 'string').add('name', 'string')
+      );
+
+      const tb = await sb.build();
+      const fn = vi.fn();
+
+      tb.onRowChange('row', (change) => {
+        if (change.type === 'insert') {
+          fn(change.type, change.row);
+        }
+      });
+
+      const row = { name: 'Jesse', id: '1' };
+      tb.setRow('row', '1', row);
+
+      expect(fn).toHaveBeenCalledOnce();
+      expect(fn).toHaveBeenCalledWith('insert', row);
+    });
+
+    it('correctly handles updated events', async () => {
+      const sb = new SchemaBuilder().addTable(
+        new TableBuilder('row').add('id', 'string').add('name', 'string')
+      );
+
+      const tb = await sb.build();
+      const fn = vi.fn();
+
+      tb.onRowChange('row', (change) => {
+        if (change.type === 'update') {
+          fn(change.type, change.row, change.changes);
+        }
+      });
+
+      const row = { name: 'Jesse', id: '1' };
+      tb.setRow('row', '1', row);
+
+      tb.setCell('row', '1', 'name', 'Christyn');
+
+      expect(fn).toHaveBeenCalledOnce();
+      expect(fn).toHaveBeenCalledWith(
+        'update',
+        { id: '1', name: 'Christyn' },
+        expect.objectContaining({
+          name: {
+            isChanged: true,
+            oldValue: 'Jesse',
+            newValue: 'Christyn',
+          },
+        })
+      );
+    });
+
+    it('correctly handles deleted events', async () => {
+      const sb = new SchemaBuilder().addTable(
+        new TableBuilder('row').add('id', 'string').add('name', 'string')
+      );
+
+      const tb = await sb.build();
+      const fn = vi.fn();
+
+      tb.onRowChange('row', (change) => {
+        if (change.type === 'delete') {
+          fn(change.type, change.rowId);
+        }
+      });
+
+      const row = { name: 'Jesse', id: '1' };
+      tb.setRow('row', '1', row);
+
+      tb.deleteRow('row', '1');
+
+      expect(fn).toHaveBeenCalledOnce();
+      expect(fn).toHaveBeenCalledWith('delete', '1');
+    });
+  });
   it('getSortedRowIds: should return sorted id by cell', async () => {
     const based = await baseBuilder.build();
     based.setRow('users', '2', {

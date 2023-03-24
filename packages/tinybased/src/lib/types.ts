@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-types */
+import { RowListener } from 'tinybase/store';
 import { SchemaBuilder } from './SchemaBuilder';
 import { CellSchema } from './TableBuilder';
 import { TinyBased } from './tinybased';
@@ -118,6 +119,22 @@ export type RelationshipDefinition = {
   to: string;
   cell: string;
 };
+
+export type CellChanges<T extends Record<string, unknown>> = {
+  [K in keyof T]: {
+    isChanged: boolean;
+    oldValue: T[K] | undefined;
+    newValue: T[K] | undefined;
+  };
+};
+
+export type RowChange<TRow extends Record<string, unknown>> =
+  | {
+      type: 'delete';
+      rowId: string | number;
+    }
+  | { type: 'insert'; row: TRow }
+  | { type: 'update'; row: TRow; changes: CellChanges<TRow> };
 
 export type RowChangeHandler<TBSchema extends TinyBaseSchema> = <
   TName extends keyof TBSchema
