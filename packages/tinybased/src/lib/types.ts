@@ -132,7 +132,7 @@ export type RowChange<TRow extends Record<string, unknown>> = (
     }
   | { type: 'insert' }
   | { type: 'update'; changes: CellChanges<TRow> }
-) & { rowId: string | number; row: TRow };
+) & { rowId: string; row: TRow };
 
 export type RowChangeHandler<TBSchema extends TinyBaseSchema> = <
   TName extends keyof TBSchema

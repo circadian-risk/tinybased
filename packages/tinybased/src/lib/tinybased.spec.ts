@@ -275,6 +275,38 @@ describe('tinybased', () => {
       expect(fn).toHaveBeenCalledOnce();
       expect(fn).toHaveBeenCalledWith('delete', ROW_ID, row);
     });
+
+    it('supports ability to mutate store in a handler', async () => {
+      const sb = new SchemaBuilder().addTable(
+        new TableBuilder('row')
+          .add('id', 'string')
+          .add('name', 'string')
+          .addOptional('updateCount', 'number')
+      );
+
+      const tb = await sb.build();
+
+      tb.onRowChange(
+        'row',
+        (change) => {
+          // Any time there is a change, increment the `updateCount` cell
+          if (change.type === 'update') {
+            const oldCount =
+              tb.getCell('row', change.rowId as string, 'updateCount') ?? 0;
+
+            tb.setCell('row', change.rowId, 'updateCount', oldCount + 1);
+          }
+        },
+        true
+      );
+
+      const row = { name: 'Jesse', id: ROW_ID };
+      tb.setRow('row', ROW_ID, row);
+      tb.setCell('row', ROW_ID, 'name', 'Christyn');
+      tb.setCell('row', ROW_ID, 'name', 'Pixel');
+
+      expect(tb.getCell('row', ROW_ID, 'updateCount')).toEqual(2);
+    });
   });
 
   it('getSortedRowIds: should return sorted id by cell', async () => {
