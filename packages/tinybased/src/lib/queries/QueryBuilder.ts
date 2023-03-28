@@ -270,6 +270,12 @@ export class QueryBuilder<
   }
 
   private internalBuild() {
+    if (this.queries.hasQuery(this.queryId)) {
+      // If the query has already been registered, we don't want to call
+      // setQueryDefinition again since it replaces the original and causes
+      // weird issues in React
+      return;
+    }
     this.queries.setQueryDefinition(
       this.queryId,
       this.startTable,
