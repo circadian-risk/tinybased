@@ -121,8 +121,7 @@ export type RelationshipDefinition = {
 };
 
 export type CellChanges<T extends Record<string, unknown>> = {
-  [K in keyof T]: {
-    isChanged: boolean;
+  [K in keyof T]?: {
     oldValue: T[K] | undefined;
     newValue: T[K] | undefined;
   };
@@ -130,11 +129,10 @@ export type CellChanges<T extends Record<string, unknown>> = {
 export type RowChange<TRow extends Record<string, unknown>> = (
   | {
       type: 'delete';
-      oldRow: TRow;
     }
-  | { type: 'insert'; row: TRow }
-  | { type: 'update'; row: TRow; changes: CellChanges<TRow> }
-) & { rowId: string | number };
+  | { type: 'insert' }
+  | { type: 'update'; changes: CellChanges<TRow> }
+) & { rowId: string | number; row: TRow };
 
 export type RowChangeHandler<TBSchema extends TinyBaseSchema> = <
   TName extends keyof TBSchema

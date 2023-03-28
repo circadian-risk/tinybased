@@ -167,13 +167,20 @@ export class TinyBased<
       null,
       (_store, _table, rowId, getCellChange) => {
         const operationType: RowChange<TBSchema[TTable]> = (() => {
-          if (!this.store.hasRow(table, rowId)) {
-            return { type: 'delete', rowId, oldRow: {} as any };
-          }
-
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
           const tableDef = this.tables.get(table)!;
           const cols = tableDef.cellNames;
+
+          if (!this.store.hasRow(table, rowId)) {
+            const changes = cols.map((col) => {
+              const [_isChanged, oldValue] = getCellChange!(table, rowId, col);
+
+              return [col, oldValue];
+            });
+
+            const row = fromPairs(changes) as unknown as TBSchema[TTable];
+            return { type: 'delete', rowId, row };
+          }
 
           const row = this.getRow(table, rowId);
 
@@ -200,7 +207,12 @@ export class TinyBased<
                 row,
                 rowId,
                 changes: fromPairs(
-                  cellChangePairs as unknown as Array<[string, {}]>
+                  cellChangePairs
+                    .filter(([_key, change]) => change.isChanged)
+                    .map(([key, { oldValue, newValue }]) => [
+                      key,
+                      { oldValue, newValue },
+                    ]) as unknown as Array<[string, {}]>
                 ) as unknown as CellChanges<TBSchema[TTable]>,
               };
         })();
