@@ -168,7 +168,7 @@ export class TinyBased<
       (_store, _table, rowId, getCellChange) => {
         const operationType: RowChange<TBSchema[TTable]> = (() => {
           if (!this.store.hasRow(table, rowId)) {
-            return { type: 'delete', rowId };
+            return { type: 'delete', rowId, oldRow: {} as any };
           }
 
           // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -194,10 +194,11 @@ export class TinyBased<
           );
 
           return isInsert
-            ? { type: 'insert', row }
+            ? { type: 'insert', row, rowId }
             : {
                 type: 'update',
                 row,
+                rowId,
                 changes: fromPairs(
                   cellChangePairs as unknown as Array<[string, {}]>
                 ) as unknown as CellChanges<TBSchema[TTable]>,

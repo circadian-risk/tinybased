@@ -127,14 +127,14 @@ export type CellChanges<T extends Record<string, unknown>> = {
     newValue: T[K] | undefined;
   };
 };
-
-export type RowChange<TRow extends Record<string, unknown>> =
+export type RowChange<TRow extends Record<string, unknown>> = (
   | {
       type: 'delete';
-      rowId: string | number;
+      oldRow: TRow;
     }
   | { type: 'insert'; row: TRow }
-  | { type: 'update'; row: TRow; changes: CellChanges<TRow> };
+  | { type: 'update'; row: TRow; changes: CellChanges<TRow> }
+) & { rowId: string | number };
 
 export type RowChangeHandler<TBSchema extends TinyBaseSchema> = <
   TName extends keyof TBSchema
