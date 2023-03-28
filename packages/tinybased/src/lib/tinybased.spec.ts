@@ -7,6 +7,7 @@ import {
 } from './types';
 import { TableBuilder } from './TableBuilder';
 import { SchemaBuilder } from './SchemaBuilder';
+import { createQueries } from 'tinybase/queries';
 
 const USER_ID_1 = 'user1';
 const USER_ID_2 = 'user2';
@@ -306,6 +307,39 @@ describe('tinybased', () => {
       tb.setCell('row', ROW_ID, 'name', 'Pixel');
 
       expect(tb.getCell('row', ROW_ID, 'updateCount')).toEqual(2);
+    });
+
+    it('makes query results invisible when processing using a mutating listener', async () => {
+      // We noticed that when using mutating row listeners, queries that had previously been registered
+      // would return stale query results
+
+      const sb = new SchemaBuilder().addTable(
+        new TableBuilder('row')
+          .add('id', 'string')
+          .add('name', 'string')
+          .addOptional('updateCount', 'number')
+      );
+
+      const fn = vi.fn();
+
+      const tb = await sb.build();
+
+      const query = tb.query('row').select('name').build();
+
+      tb.onRowChange(
+        'row',
+        (change) => {
+          if (change.type === 'insert') {
+            const queryIds = query.getResultRowIds();
+            fn(queryIds);
+          }
+        },
+        true
+      );
+
+      tb.bulkUpsert('row', [{ id: ROW_ID, name: 'Jesse' }]);
+
+      expect(fn).toHaveBeenCalledWith([]);
     });
   });
 
