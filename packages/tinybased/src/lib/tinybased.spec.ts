@@ -193,6 +193,12 @@ describe('tinybased', () => {
   });
 
   describe('Listeners', () => {
+    let ROW_ID: string;
+
+    beforeAll(() => {
+      ROW_ID = '1';
+    });
+
     it('correctly handles created events', async () => {
       const sb = new SchemaBuilder().addTable(
         new TableBuilder('row').add('id', 'string').add('name', 'string')
@@ -207,8 +213,8 @@ describe('tinybased', () => {
         }
       });
 
-      const row = { name: 'Jesse', id: '1' };
-      tb.setRow('row', '1', row);
+      const row = { name: 'Jesse', id: ROW_ID };
+      tb.setRow('row', ROW_ID, row);
 
       expect(fn).toHaveBeenCalledOnce();
       expect(fn).toHaveBeenCalledWith('insert', row);
@@ -224,26 +230,26 @@ describe('tinybased', () => {
 
       tb.onRowChange('row', (change) => {
         if (change.type === 'update') {
-          fn(change.type, change.row, change.changes);
+          fn(change.type, change.rowId, change.row, change.changes);
         }
       });
 
-      const row = { name: 'Jesse', id: '1' };
-      tb.setRow('row', '1', row);
+      const row = { name: 'Jesse', id: ROW_ID };
+      tb.setRow('row', ROW_ID, row);
 
-      tb.setCell('row', '1', 'name', 'Christyn');
+      tb.setCell('row', ROW_ID, 'name', 'Christyn');
 
       expect(fn).toHaveBeenCalledOnce();
       expect(fn).toHaveBeenCalledWith(
         'update',
-        { id: '1', name: 'Christyn' },
-        expect.objectContaining({
+        ROW_ID,
+        { id: ROW_ID, name: 'Christyn' },
+        {
           name: {
-            isChanged: true,
             oldValue: 'Jesse',
             newValue: 'Christyn',
           },
-        })
+        }
       );
     });
 
@@ -257,19 +263,52 @@ describe('tinybased', () => {
 
       tb.onRowChange('row', (change) => {
         if (change.type === 'delete') {
-          fn(change.type, change.rowId);
+          fn(change.type, change.rowId, change.row);
         }
       });
 
-      const row = { name: 'Jesse', id: '1' };
-      tb.setRow('row', '1', row);
+      const row = { name: 'Jesse', id: ROW_ID };
+      tb.setRow('row', ROW_ID, row);
 
-      tb.deleteRow('row', '1');
+      tb.deleteRow('row', ROW_ID);
 
       expect(fn).toHaveBeenCalledOnce();
-      expect(fn).toHaveBeenCalledWith('delete', '1');
+      expect(fn).toHaveBeenCalledWith('delete', ROW_ID, row);
+    });
+
+    it('supports ability to mutate store in a handler', async () => {
+      const sb = new SchemaBuilder().addTable(
+        new TableBuilder('row')
+          .add('id', 'string')
+          .add('name', 'string')
+          .addOptional('updateCount', 'number')
+      );
+
+      const tb = await sb.build();
+
+      tb.onRowChange(
+        'row',
+        (change) => {
+          // Any time there is a change, increment the `updateCount` cell
+          if (change.type === 'update') {
+            const oldCount =
+              tb.getCell('row', change.rowId as string, 'updateCount') ?? 0;
+
+            tb.setCell('row', change.rowId, 'updateCount', oldCount + 1);
+          }
+        },
+        true
+      );
+
+      const row = { name: 'Jesse', id: ROW_ID };
+      tb.setRow('row', ROW_ID, row);
+      tb.setCell('row', ROW_ID, 'name', 'Christyn');
+      tb.setCell('row', ROW_ID, 'name', 'Pixel');
+
+      expect(tb.getCell('row', ROW_ID, 'updateCount')).toEqual(2);
     });
   });
+
   it('getSortedRowIds: should return sorted id by cell', async () => {
     const based = await baseBuilder.build();
     based.setRow('users', '2', {
