@@ -5,24 +5,28 @@ import {
   Relationships,
   Table,
   TinyBaseSchema,
-  Cell,
   OnlyStringKeys,
   RelationshipDefinition,
 } from './types';
-import { z, ZodObject, ZodRawShape, ZodSchema } from 'zod';
-
-// Question... How do we ensure that users can only provide
-// schemas which are composed as primitives and not nested objects or
-// other incompatible types?
+import {
+  z,
+  ZodBoolean,
+  ZodEnum,
+  ZodNumber,
+  ZodObject,
+  ZodOptional,
+  ZodString,
+} from 'zod';
 
 const usersTableSchema = z.object({
   id: z.string(),
   name: z.string(),
   age: z.number(),
-  type: z.union([z.literal('admin'), z.literal('member')]),
-  nested: z.object({
-    id: z.number(),
-  }),
+  // type: z.union([z.literal('admin'), z.literal('member')]),
+  enum: z.enum(['one', 'two', 'three']),
+  // nested: z.object({
+  //   id: z.number(),
+  // }),
 });
 
 const notesTableSchema = z.object({
@@ -31,20 +35,15 @@ const notesTableSchema = z.object({
   text: z.string().optional(),
 });
 
-type RemoveNever<T> = Pick<
-  T,
-  Exclude<keyof T, { [K in keyof T]: T[K] extends never ? K : never }[keyof T]>
->;
+type ZodCells =
+  | ZodString
+  | ZodBoolean
+  | ZodNumber
+  | ZodEnum<[string, ...string[]]>;
 
-type Primitives<T extends Record<string, unknown>> = RemoveNever<{
-  [K in keyof T]: Required<T>[K] extends Cell ? T[K] : never;
-}>;
+type OptionalZodCells = ZodCells | ZodOptional<ZodCells>;
 
-type ValueSchema<T> = T extends ZodSchema<infer S>
-  ? S extends Cell
-    ? S
-    : never
-  : never;
+type ZodTable = ZodObject<Record<string, OptionalZodCells>>;
 
 export class ZodSchemaBuilder<
   TBSchema extends TinyBaseSchema = {},
@@ -54,11 +53,12 @@ export class ZodSchemaBuilder<
 > {
   private readonly relationshipDefinitions: RelationshipDefinition[] = [];
 
-  addTable<TName extends string, TSchema extends ZodObject<ZodRawShape>>(
-    _tableName: TName,
-    _schema: TSchema
+  addTable<TName extends string, TSchema extends ZodTable>(
+    _name: TName,
+    _schema: TSchema,
+    _keys?: Array<keyof z.infer<TSchema>>
   ): ZodSchemaBuilder<
-    Prettify<TBSchema & Record<TName, Prettify<Primitives<z.infer<TSchema>>>>>,
+    Prettify<TBSchema & Record<TName, z.infer<TSchema>>>,
     TRelationshipNames,
     TRelationships,
     TKeyValueSchema
@@ -66,18 +66,14 @@ export class ZodSchemaBuilder<
     return this;
   }
 
-  // This currently works for preventing non-cell values, but it doesn't give a type error.
-  // It just silently removes the invalid key from the resulting types
-  addValue<TName extends string, TValueSchema extends ZodSchema>(
+  addValue<TName extends string, TValueSchemaThing extends OptionalZodCells>(
     _name: TName,
-    _schema: TValueSchema
+    _valueSchema: TValueSchemaThing
   ): ZodSchemaBuilder<
     TBSchema,
     TRelationshipNames,
     TRelationships,
-    Prettify<
-      RemoveNever<TKeyValueSchema & Record<TName, ValueSchema<TValueSchema>>>
-    >
+    Prettify<TKeyValueSchema & Record<TName, z.infer<TValueSchemaThing>>>
   > {
     return this;
   }
@@ -112,10 +108,6 @@ export class ZodSchemaBuilder<
   }
 }
 
-const valueSchema = z.union([z.literal('one'), z.literal('two')]);
-
-type Test1 = ValueSchema<typeof valueSchema>;
-
 type TablesSchema<T> = T extends ZodSchemaBuilder<infer TS> ? TS : never;
 type KeyValuesSchema<T> = T extends ZodSchemaBuilder<
   infer _T,
@@ -127,13 +119,22 @@ type KeyValuesSchema<T> = T extends ZodSchemaBuilder<
   : never;
 
 const b = new ZodSchemaBuilder()
-  .addTable('users', usersTableSchema)
+  .addTable('users', usersTableSchema, ['name'])
   .addTable('notes', notesTableSchema)
-  .addValue('type', valueSchema)
-  .addValue('nested', usersTableSchema)
-  .addValue('bool', z.boolean())
-  .defineRelationship('userNotes', 'notes', 'users', 'userId');
+  .addValue('type', z.number().optional())
+  .addValue('multi', z.enum(['jesse', 'mike', 'deep']).optional());
+
+// .addTable('users', usersTableSchema)
+// .addTable('notes', notesTableSchema)
+// .addAnotherValue('type', z.enum(['one', 'two', 'three']).optional())
+// .addValue('nested', usersTableSchema)
+// .addValue('bool', z.boolean())
+// .defineRelationship('userNotes', 'notes', 'users', 'userId');
+
 //
+
+// b.addAnotherValue('something', z.enum(['one', 'two', 'three']));
+// b.addAnotherValue('another', z.string().optional());
 
 type TablesShape = TablesSchema<typeof b>;
 type KeyValuesShape = KeyValuesSchema<typeof b>;

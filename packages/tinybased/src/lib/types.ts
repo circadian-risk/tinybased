@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { RowListener } from 'tinybase/store';
 import { SchemaBuilder } from './SchemaBuilder';
 import { CellSchema } from './TableBuilder';
 import { TinyBased } from './tinybased';
 
-export type Cell = string | number | boolean;
+export type Cell = string | number | boolean | undefined;
 export type Table = Record<string, Cell>;
 export type TinyBaseSchema = Record<string, Table>;
 export type TableNames<TBSchema extends TinyBaseSchema> =
