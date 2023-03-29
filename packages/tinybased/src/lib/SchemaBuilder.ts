@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { Schema } from '../fixture/database';
 import { TableBuilder } from './TableBuilder';
 import { TinyBased } from './tinybased';
 import {
@@ -14,7 +13,6 @@ import {
   TinyBaseSchema,
   Relationships,
   Table,
-  Cell,
   CellTypeMap,
   CellStringType,
 } from './types';
