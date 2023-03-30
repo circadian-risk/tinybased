@@ -208,4 +208,18 @@ describe('QueryBuilder', () => {
 
     expect(result['0']).toEqual({ total: 3, draftCount: 1 });
   });
+
+  it('can query for undefined cells', async () => {
+    const db = await sb.build();
+    db.deleteCell('notes', 'note3', 'isDraft');
+
+    const rowIds = db
+      .query('notes')
+      .where('isDraft', undefined)
+      .select('id')
+      .build()
+      .getResultRowIds();
+
+    expect(rowIds).toEqual(['note3']);
+  });
 });
