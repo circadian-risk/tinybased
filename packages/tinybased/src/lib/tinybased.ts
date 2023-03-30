@@ -182,7 +182,8 @@ export class TinyBased<
             return { type: 'delete', rowId, row };
           }
 
-          const row = this.getRow(table, rowId);
+          // We checked already using hasRow to make sure that this is actually a real thing
+          const row = this.getRow(table, rowId)!;
 
           const cellChangePairs = cols.map((col) => {
             // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -277,7 +278,9 @@ export class TinyBased<
         `Attempted to merge row in ${table} with id ${rowId} but the targeted row does not exist`
       );
     }
-    const current = this.getRow(table, rowId);
+
+    // We just checked above if hasRow was true or not so this is safe
+    const current = this.getRow(table, rowId)!;
     this.setRow(table, rowId, { ...current, ...toMerge });
   }
 
@@ -285,6 +288,9 @@ export class TinyBased<
     table: TTable,
     rowId: string
   ) {
+    if (!this.store.hasRow(table, rowId)) {
+      return undefined;
+    }
     return this.store.getRow(table, rowId) as TBSchema[TTable];
   }
 
