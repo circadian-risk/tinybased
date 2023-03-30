@@ -162,6 +162,22 @@ describe('tinybased', () => {
       ).toThrowError();
     });
 
+    it('should return undefined for a getRow that has no corresponding row', async () => {
+      const based = await baseBuilder.build();
+      const nonExistentRow = based.getRow('users', 'thisRowDoesNotExist');
+      expect(nonExistentRow).toBeUndefined();
+    });
+
+    it('should return undefined for a getCell that has no corresponding row', async () => {
+      const based = await baseBuilder.build();
+      const nonExistentCell = based.getCell(
+        'users',
+        'thisRowDoesNotExist',
+        'name'
+      );
+      expect(nonExistentCell).toBeUndefined();
+    });
+
     it('should handle nulls if they are provided through ejecting types with any', async () => {
       const based = await baseBuilder.build();
       based.setRow('users', USER_ID_1, exampleUser);
