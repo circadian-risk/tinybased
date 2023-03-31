@@ -22,8 +22,9 @@ const usersTableSchema = z.object({
   id: z.string(),
   name: z.string(),
   age: z.number(),
-  // type: z.union([z.literal('admin'), z.literal('member')]),
   enum: z.enum(['one', 'two', 'three']),
+
+  // type: z.union([z.literal('admin'), z.literal('member')]),
   // nested: z.object({
   //   id: z.number(),
   // }),
@@ -32,6 +33,7 @@ const usersTableSchema = z.object({
 const notesTableSchema = z.object({
   id: z.string(),
   userId: z.string(),
+  count: z.number(),
   text: z.string().optional(),
 });
 
@@ -44,6 +46,67 @@ type ZodCells =
 type OptionalZodCells = ZodCells | ZodOptional<ZodCells>;
 
 type ZodTable = ZodObject<Record<string, OptionalZodCells>>;
+
+type TableOptions<T extends Record<string, unknown>> = {
+  keyBy: [keyof T, ...Array<keyof T>];
+};
+
+type Thing<
+  T extends Record<string, unknown> = {},
+  K extends keyof T = never
+> = {
+  table: T;
+  options: {
+    keyBy: K;
+  };
+};
+
+type NewSchema = Record<string, Thing>;
+
+class TestBuilderWithIds<TSchema extends NewSchema = {}> {
+  addTable<
+    TName extends string,
+    TTable extends ZodTable,
+    TOptions extends TableOptions<z.infer<TTable>>
+  >(
+    _name: TName,
+    _table: TTable,
+    _options: TOptions
+  ): TestBuilderWithIds<
+    TSchema &
+      Record<
+        TName,
+        {
+          table: z.infer<TTable>;
+          options: { keyBy: TOptions['keyBy'][number] };
+        }
+      >
+  > {
+    return this;
+  }
+
+  identify<TTableName extends keyof TSchema>(
+    _tableName: TTableName,
+    _opts: Pick<
+      TSchema[TTableName]['table'],
+      TSchema[TTableName]['options']['keyBy']
+    >
+  ) {
+    return 'asdf';
+  }
+}
+
+type NotesRow = z.infer<typeof notesTableSchema>;
+type Id = Pick<NotesRow, 'id' | 'count'>;
+
+const test = new TestBuilderWithIds().addTable('notes', notesTableSchema, {
+  keyBy: ['id', 'count'],
+});
+
+const testing = test.identify('notes', {
+  count: 1,
+  id: '123',
+});
 
 export class ZodSchemaBuilder<
   TBSchema extends TinyBaseSchema = {},
@@ -122,19 +185,10 @@ const b = new ZodSchemaBuilder()
   .addTable('users', usersTableSchema, ['name'])
   .addTable('notes', notesTableSchema)
   .addValue('type', z.number().optional())
-  .addValue('multi', z.enum(['jesse', 'mike', 'deep']).optional());
-
-// .addTable('users', usersTableSchema)
-// .addTable('notes', notesTableSchema)
-// .addAnotherValue('type', z.enum(['one', 'two', 'three']).optional())
-// .addValue('nested', usersTableSchema)
-// .addValue('bool', z.boolean())
-// .defineRelationship('userNotes', 'notes', 'users', 'userId');
-
-//
-
-// b.addAnotherValue('something', z.enum(['one', 'two', 'three']));
-// b.addAnotherValue('another', z.string().optional());
+  .addValue(
+    'multi',
+    z.enum(['jesse', 'mike', 'deep', 'rodrigo', 'vanya']).optional()
+  );
 
 type TablesShape = TablesSchema<typeof b>;
 type KeyValuesShape = KeyValuesSchema<typeof b>;
