@@ -21,5 +21,6 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm nx affected --base=origin/main --head=HEAD --target=lint
+      - run: pnpm tsc --noEmit -P packages/tinybased/tsconfig.spec.json
       - run: pnpm nx affected --base=origin/main --head=HEAD --target=test
       - run: pnpm nx affected --base=origin/main --head=HEAD --target=build
