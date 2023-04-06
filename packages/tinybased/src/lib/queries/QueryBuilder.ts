@@ -185,6 +185,11 @@ export class QueryBuilder<
     return this as any;
   }
 
+  /**
+   * Defines a where condition that accepts a lambda to dynamically compare cells using custom logic to determine a match
+   * Calling this with a single argument will match on the query's source table. If other tables have been joined,
+   * this can be called with two arguments to choose the joined table to apply the where condition on
+   */
   whereUsing(
     checker: (CellGetter: {
       <TCellName extends OnlyStringKeys<TSchema[TStartTable]>>(
