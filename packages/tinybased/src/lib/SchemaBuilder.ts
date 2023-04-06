@@ -17,7 +17,6 @@ import {
   Cell,
   CellTypeMap,
   CellStringType,
-  Prettify,
 } from './types';
 
 export class SchemaBuilder<
@@ -68,7 +67,7 @@ export class SchemaBuilder<
   public addTable<TName extends string, TCells extends Record<string, unknown>>(
     tableBuilder: TableBuilder<TName, TCells>
   ): SchemaBuilder<
-    Prettify<TBSchema & Record<TName, TCells>>,
+    TBSchema & Record<TName, TCells>,
     TRelationshipNames,
     TRelationships,
     TKeyValueSchema
@@ -89,7 +88,7 @@ export class SchemaBuilder<
     TBSchema,
     TRelationshipNames,
     TRelationships,
-    Prettify<TKeyValueSchema & Record<TKeyName, CellTypeMap[TValueType]>>
+    TKeyValueSchema & Record<TKeyName, CellTypeMap[TValueType]>
   > {
     // TODO
     return this as any;

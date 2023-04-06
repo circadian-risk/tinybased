@@ -74,10 +74,7 @@ export class TableBuilder<
   add<TCellName extends string, TCellType extends CellStringType>(
     name: TCellName,
     type: TCellType
-  ): TableBuilder<
-    TName,
-    Prettify<TCells & Record<TCellName, CellTypeMap[TCellType]>>
-  > {
+  ): TableBuilder<TName, TCells & Record<TCellName, CellTypeMap[TCellType]>> {
     this._cells.push({ name, type });
     return this;
   }
@@ -87,7 +84,7 @@ export class TableBuilder<
     type: TCellType
   ): TableBuilder<
     TName,
-    Prettify<TCells & Partial<Record<TCellName, CellTypeMap[TCellType]>>>
+    TCells & Partial<Record<TCellName, CellTypeMap[TCellType]>>
   > {
     this._cells.push({ name, type, optional: true });
 
