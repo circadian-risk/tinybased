@@ -6,7 +6,6 @@ import {
   Aggregations,
   Cell,
   OnlyStringKeys,
-  Prettify,
   RelationshipDefinition,
   TinyBaseSchema,
 } from '../types';
@@ -98,8 +97,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    Prettify<TSelection & Record<TCellName, TSchema[TStartTable][TCellName]>>,
-    Prettify<TResult & Record<TCellName, TSchema[TStartTable][TCellName]>>
+    TSelection & Record<TCellName, TSchema[TStartTable][TCellName]>,
+    TResult & Record<TCellName, TSchema[TStartTable][TCellName]>
   > {
     this.selects.push(cellName);
     return this as any;
@@ -119,8 +118,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    Prettify<TSelection & Record<TAlias, TSchema[TStartTable][TCellName]>>,
-    Prettify<TResult & Record<TAlias, TSchema[TStartTable][TCellName]>>
+    TSelection & Record<TAlias, TSchema[TStartTable][TCellName]>,
+    TResult & Record<TAlias, TSchema[TStartTable][TCellName]>
   > {
     this.selectsWithAlias.push([cellName, alias]);
     return this as any;
@@ -162,7 +161,7 @@ export class QueryBuilder<
     TStartTable,
     TJoinedTables,
     TSelection,
-    Prettify<TResult & Record<Alias, number>>
+    TResult & Record<Alias, number>
   > {
     this.groupUsings.push([groupBy, using, as]);
     return this as any;
@@ -228,8 +227,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    Prettify<TSelection & Record<TCellName, TSchema[TTable][TCellName]>>,
-    Prettify<TResult & Record<TCellName, TSchema[TTable][TCellName]>>
+    TSelection & Record<TCellName, TSchema[TTable][TCellName]>,
+    TResult & Record<TCellName, TSchema[TTable][TCellName]>
   > {
     this.selectFroms.push([tableName as string, cell]);
 
@@ -253,8 +252,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    Prettify<TSelection & Record<TAlias, TSchema[TTable][TCellName]>>,
-    Prettify<TResult & Record<TAlias, TSchema[TTable][TCellName]>>
+    TSelection & Record<TAlias, TSchema[TTable][TCellName]>,
+    TResult & Record<TAlias, TSchema[TTable][TCellName]>
   > {
     this.selectFromsWithAlias.push([tableName as string, cell, alias]);
 
