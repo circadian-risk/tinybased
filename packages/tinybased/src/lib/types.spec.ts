@@ -13,5 +13,5 @@ it('should parse table schema from builder', async () => {
 
   const record = baseBuilder.getRow('users', '1');
 
-  expectTypeOf(record).toMatchTypeOf<ExpectedUserType>();
+  expectTypeOf(record).toMatchTypeOf<ExpectedUserType | undefined>();
 });

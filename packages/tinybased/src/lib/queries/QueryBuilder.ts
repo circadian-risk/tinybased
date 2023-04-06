@@ -6,6 +6,7 @@ import {
   Aggregations,
   Cell,
   OnlyStringKeys,
+  Prettify,
   RelationshipDefinition,
   TinyBaseSchema,
 } from '../types';
@@ -97,8 +98,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    TSelection & Record<TCellName, TSchema[TStartTable][TCellName]>,
-    TResult & Record<TCellName, TSchema[TStartTable][TCellName]>
+    Prettify<TSelection & Record<TCellName, TSchema[TStartTable][TCellName]>>,
+    Prettify<TResult & Record<TCellName, TSchema[TStartTable][TCellName]>>
   > {
     this.selects.push(cellName);
     return this as any;
@@ -118,8 +119,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    TSelection & Record<TAlias, TSchema[TStartTable][TCellName]>,
-    TResult & Record<TAlias, TSchema[TStartTable][TCellName]>
+    Prettify<TSelection & Record<TAlias, TSchema[TStartTable][TCellName]>>,
+    Prettify<TResult & Record<TAlias, TSchema[TStartTable][TCellName]>>
   > {
     this.selectsWithAlias.push([cellName, alias]);
     return this as any;
@@ -161,7 +162,7 @@ export class QueryBuilder<
     TStartTable,
     TJoinedTables,
     TSelection,
-    TResult & Record<Alias, number>
+    Prettify<TResult & Record<Alias, number>>
   > {
     this.groupUsings.push([groupBy, using, as]);
     return this as any;
@@ -173,16 +174,9 @@ export class QueryBuilder<
   where<TCellName extends OnlyStringKeys<TSchema[TStartTable]>>(
     cellName: TCellName,
     value: TSchema[TStartTable][TCellName]
-  ): QueryBuilder<
-    TSchema,
-    TRelationships,
-    TStartTable,
-    TJoinedTables,
-    TSelection & Record<TCellName, TSchema[TStartTable][TCellName]>,
-    TResult & Record<TCellName, TSchema[TStartTable][TCellName]>
-  > {
+  ) {
     this.wheres.push([cellName, value]);
-    return this as any;
+    return this;
   }
 
   /**
@@ -190,13 +184,13 @@ export class QueryBuilder<
    * Calling this with a single argument will match on the query's source table. If other tables have been joined,
    * this can be called with two arguments to choose the joined table to apply the where condition on
    */
-  whereUsing(
+  whereUsing<TSTable extends TStartTable, TJTables extends TJoinedTables>(
     checker: (CellGetter: {
-      <TCellName extends OnlyStringKeys<TSchema[TStartTable]>>(
+      <TCellName extends OnlyStringKeys<TSchema[TSTable]>>(
         cell: TCellName
-      ): TSchema[TStartTable][TCellName];
+      ): TSchema[TSTable][TCellName];
       <
-        TTable extends TJoinedTables,
+        TTable extends TJTables,
         TCellName extends OnlyStringKeys<TSchema[TTable]>
       >(
         joinedTableName: TTable,
@@ -234,8 +228,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    TSelection & Record<TCellName, TSchema[TTable][TCellName]>,
-    TResult & Record<TCellName, TSchema[TTable][TCellName]>
+    Prettify<TSelection & Record<TCellName, TSchema[TTable][TCellName]>>,
+    Prettify<TResult & Record<TCellName, TSchema[TTable][TCellName]>>
   > {
     this.selectFroms.push([tableName as string, cell]);
 
@@ -259,8 +253,8 @@ export class QueryBuilder<
     TRelationships,
     TStartTable,
     TJoinedTables,
-    TSelection & Record<TAlias, TSchema[TTable][TCellName]>,
-    TResult & Record<TAlias, TSchema[TTable][TCellName]>
+    Prettify<TSelection & Record<TAlias, TSchema[TTable][TCellName]>>,
+    Prettify<TResult & Record<TAlias, TSchema[TTable][TCellName]>>
   > {
     this.selectFromsWithAlias.push([tableName as string, cell, alias]);
 
