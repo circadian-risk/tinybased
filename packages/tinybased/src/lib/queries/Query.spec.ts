@@ -222,4 +222,68 @@ describe('QueryBuilder', () => {
 
     expect(rowIds).toEqual(['note3']);
   });
+
+  it('supports custom logic for where clause', async () => {
+    const db = await sb.build();
+
+    const qbForCustomWhereOnStartTable = db
+      .query('notes')
+      .select('id')
+      .select('isDraft')
+      .whereUsing((getCell) => getCell('isDraft') === true)
+      .build();
+
+    expect(qbForCustomWhereOnStartTable.getResultTable()).toEqual({
+      note1: {
+        id: 'note1',
+        isDraft: true,
+      },
+    });
+
+    const qbForCustomWhereOnJoinedTable = db
+      .query('notes')
+      .select('id')
+      .select('isDraft')
+      .join('userNotes')
+      .whereUsing((getCellFrom) => getCellFrom('users', 'name') === 'Jesse')
+      .build();
+
+    expect(qbForCustomWhereOnJoinedTable.getResultTable()).toEqual({
+      note1: {
+        id: 'note1',
+        isDraft: true,
+      },
+      note2: {
+        id: 'note2',
+        isDraft: false,
+      },
+    });
+  });
+
+  it('generates unique query ids when using whereUsing', async () => {
+    const db = await sb.build();
+    const qb1 = db
+      .query('notes')
+      .select('id')
+      .whereUsing((getCell) => getCell('isDraft') === true)
+      .build();
+
+    const qb2 = db
+      .query('notes')
+      .select('id')
+      .whereUsing((getCell) => getCell('isDraft') === false)
+      .build();
+
+    expect(qb1.queryId).not.toEqual(qb2.queryId);
+    expect(qb1.queryId).toEqual(
+      expect.stringContaining(
+        '-whereUsing-[(getCell)=>getCell("isDraft")===true]-'
+      )
+    );
+    expect(qb2.queryId).toEqual(
+      expect.stringContaining(
+        '-whereUsing-[(getCell)=>getCell("isDraft")===false]-'
+      )
+    );
+  });
 });
