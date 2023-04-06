@@ -143,11 +143,11 @@ describe('Tinybased React', () => {
       });
 
       it('result ids', () => {
-        const { result } = renderHook(() =>
-          hooks.useQueryResultIds(
-            based.query('notes').where('userId', USER_ID_1).select('text')
-          )
-        );
+        const qb = based
+          .query('notes')
+          .where('userId', USER_ID_1)
+          .select('text');
+        const { result } = renderHook(() => hooks.useQueryResultIds(qb));
 
         expect(result.current).toEqual([NOTE_ID, NOTE_ID_2]);
 

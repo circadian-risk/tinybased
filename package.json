@@ -4,7 +4,9 @@
   "license": "MIT",
   "scripts": {
     "format": "prettier --write .",
-    "release": "pnpm changeset publish"
+    "release": "pnpm changeset publish",
+    "typecheck": "tsc --noEmit -P packages/tinybased/tsconfig.spec.json",
+    "test": "nx test tinybased"
   },
   "private": true,
   "devDependencies": {
