@@ -53,6 +53,11 @@ export class QueryBuilder<
   private readonly whereFroms: Array<
     [string, string, string | number | boolean]
   > = [];
+  private readonly whereUsings: Array<
+    (
+      CellGetter: (joinedTableNameOrCell: string, joinTableCell?: string) => any
+    ) => boolean
+  > = [];
   private readonly groups: Array<[string, Aggregations, string]> = [];
   private readonly groupUsings: Array<[string, (any: []) => number, string]> =
     [];
@@ -180,13 +185,31 @@ export class QueryBuilder<
     return this as any;
   }
 
+  whereUsing(
+    checker: (CellGetter: {
+      <TCellName extends OnlyStringKeys<TSchema[TStartTable]>>(
+        cell: TCellName
+      ): TSchema[TStartTable][TCellName];
+      <
+        TTable extends TJoinedTables,
+        TCellName extends OnlyStringKeys<TSchema[TTable]>
+      >(
+        joinedTableName: TTable,
+        cell: TCellName
+      ): TSchema[TTable][TCellName];
+    }) => boolean
+  ) {
+    this.whereUsings.push(checker);
+    return this;
+  }
+
   /**
    * Defines a where condition for equality on one of the joined table's cells
    */
   whereFrom<
     TTable extends TJoinedTables,
     TCellName extends OnlyStringKeys<TSchema[TTable]>,
-    TValue extends TSchema[TTable][TCellName]
+    TValue extends NonNullable<TSchema[TTable][TCellName]>
   >(tableName: TTable, cell: TCellName, value: TValue) {
     this.whereFroms.push([tableName as string, cell, value]);
     return this;
@@ -252,12 +275,26 @@ export class QueryBuilder<
     const selectFromAs = `selectFromAs-${this.selectFromsWithAlias.join('_')}`;
     const where = `where-${this.wheres.join('_')}`;
     const whereFrom = `where-${this.whereFroms.join('_')}`;
+    const whereUsing = `whereUsing-[${this.whereUsings
+      .map((x) => x.toString().replace(/\s+/g, ''))
+      .join('_')}]`;
     const group = `group-${this.groups.join('_')}`;
     const groupUsing = `groupUsing-${this.groupUsings
       .map((x) => x[0])
       .join('_')}`;
 
-    return `${this.startTable}-${select}-${selectAs}-${selectFrom}-${selectFromAs}-${where}-${whereFrom}-${group}-${groupUsing}`;
+    return [
+      this.startTable,
+      select,
+      selectAs,
+      selectFrom,
+      selectFromAs,
+      where,
+      whereFrom,
+      whereUsing,
+      group,
+      groupUsing,
+    ].join('-');
   }
 
   /**
@@ -285,6 +322,10 @@ export class QueryBuilder<
         });
 
         this.wheres.forEach(([cell, value]) => where(cell, value));
+
+        this.whereUsings.forEach((checker) => {
+          where(checker);
+        });
 
         this.whereFroms.forEach(([table, cell, value]) => {
           return where(table, cell, value);
