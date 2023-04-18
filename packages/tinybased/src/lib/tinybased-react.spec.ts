@@ -34,15 +34,29 @@ describe('Tinybased React', () => {
       expect(result.current).toBeUndefined();
     });
 
-    it('useCell', () => {
-      const { result } = renderHook(() =>
-        hooks.useCell('users', 'user2', 'name')
-      );
-      expect(result.current).toEqual('Bob');
+    describe('useCell', () => {
+      it('name (static cell)', () => {
+        const { result } = renderHook(() =>
+          hooks.useCell('users', 'user2', 'name')
+        );
+        expect(result.current).toEqual('Bob');
 
-      based.setCell('users', 'user2', 'name', 'Bob Ross');
+        based.setCell('users', 'user2', 'name', 'Bob Ross');
 
-      expect(result.current).toEqual('Bob Ross');
+        expect(result.current).toEqual('Bob Ross');
+      });
+      it('isAdult (computed)', () => {
+        const { result } = renderHook(() =>
+          hooks.useCell('users', 'user2', 'isAdult')
+        );
+
+        based.getRow('users', 'user2');
+        expect(result.current).toEqual(true);
+
+        based.setCell('users', 'user2', 'age', 16);
+
+        expect(result.current).toEqual(false);
+      });
     });
 
     it('useRow', () => {
@@ -52,6 +66,7 @@ describe('Tinybased React', () => {
         name: 'Jesse',
         age: 33,
         isAdmin: true,
+        isAdult: true,
       });
 
       based.setCell('users', 'user1', 'name', 'Jesse Carter');
@@ -61,6 +76,7 @@ describe('Tinybased React', () => {
         name: 'Jesse Carter',
         age: 33,
         isAdmin: true,
+        isAdult: true,
       });
     });
 

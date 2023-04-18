@@ -26,7 +26,7 @@ import {
 } from './types';
 
 export type TinyBasedReactHooks<
-  TB extends TinyBased<any, any, any, any>,
+  TB extends TinyBased<any, any, any, any, any>,
   TBSchema extends TinyBaseSchema = InferSchema<TB>,
   TKeyValueSchema extends Table = InferKeyValueSchema<TB>
 > = {

@@ -7,20 +7,24 @@ const USER_1: UserRow = {
   age: 19,
   name: 'Mikey',
   isAdmin: true,
+  isAdult: true,
 };
 const USER_2: UserRow = {
+  ...USER_1,
   id: 'jadf123',
   age: 35,
   name: 'Jesse',
   isAdmin: false,
 };
 const USER_3: UserRow = {
+  ...USER_1,
   id: 'zzzz9999',
   age: 77,
   name: 'Jessa',
   isAdmin: false,
 };
 const USER_4: UserRow = {
+  ...USER_1,
   id: 'abbbccc1233123',
   age: 21,
   name: 'Deep',

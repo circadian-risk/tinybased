@@ -26,6 +26,7 @@ export type CellSchema = {
   name: string;
   type: CellStringType;
   optional?: boolean;
+  compute?: (row: any) => any;
 };
 
 export type InferTable<T> = T extends TableBuilder<infer _TName, infer TCells>
@@ -35,7 +36,11 @@ export type InferTable<T> = T extends TableBuilder<infer _TName, infer TCells>
 export class TableBuilder<
   TName extends string = never,
   // eslint-disable-next-line @typescript-eslint/ban-types
-  TCells extends Record<string, unknown> = {}
+  TCells extends Record<string, unknown> = {},
+  /**
+   * The columns of this table that are computed and therefore should not be set directly by the consumer
+   */
+  TComputedColumns extends string = ''
 > {
   private readonly _cells: CellSchema[] = [];
 
@@ -74,9 +79,13 @@ export class TableBuilder<
   add<TCellName extends string, TCellType extends CellStringType>(
     name: TCellName,
     type: TCellType
-  ): TableBuilder<TName, TCells & Record<TCellName, CellTypeMap[TCellType]>> {
+  ): TableBuilder<
+    TName,
+    TCells & Record<TCellName, CellTypeMap[TCellType]>,
+    TComputedColumns
+  > {
     this._cells.push({ name, type });
-    return this;
+    return this as any;
   }
 
   addOptional<TCellName extends string, TCellType extends CellStringType>(
@@ -84,11 +93,34 @@ export class TableBuilder<
     type: TCellType
   ): TableBuilder<
     TName,
-    TCells & Partial<Record<TCellName, CellTypeMap[TCellType]>>
+    TCells & Partial<Record<TCellName, CellTypeMap[TCellType]>>,
+    TComputedColumns
   > {
     this._cells.push({ name, type, optional: true });
 
-    return this;
+    return this as any;
+  }
+
+  /**
+   * Add a computed column to the table; this column's value is to be derived from other columns
+   */
+  addComputed<TCellName extends string, TCellType extends CellStringType>(
+    name: TCellName,
+    type: TCellType,
+    /**
+     * Function to run to compute this column value based on the current row values
+     */
+    compute: (row: TCells) => CellTypeMap[TCellType]
+  ): TableBuilder<
+    TName,
+    TCells & Record<TCellName, CellTypeMap[TCellType]>,
+    /**
+     * This cell and the previously identified computed cells should be unioned
+     */
+    TCellName | TComputedColumns
+  > {
+    this._cells.push({ name, type, compute });
+    return this as any;
   }
 
   defineKeyDelimiter(delimiter: string) {
@@ -97,6 +129,7 @@ export class TableBuilder<
   }
 
   keyBy<TCellName extends OnlyStringKeys<TCells>>(
+    // TODO: Do not allow computed columns as part of key [CR-2992]
     cells: TCellName | TCellName[]
   ) {
     this._keys = Array.isArray(cells) ? cells : [cells];
