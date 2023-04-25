@@ -218,11 +218,13 @@ export function makeTinybasedHooks<
   ): Record<string, TResult> => {
     const query = useMemo(() => qb.build(), [qb.queryId]);
 
-    useEffect(() => {
-      return () => {
-        tinyBased.queries.delQueryDefinition(query.queryId);
-      };
-    }, [tinyBased, query.queryId]);
+    // TODO: It would be nice to clean up the query definitions on unmount but this
+    // appears to be causing problems where the definitions get lost and not properly put back
+    // useEffect(() => {
+    //   return () => {
+    //     tinyBased.queries.delQueryDefinition(query.queryId);
+    //   };
+    // }, [tinyBased, query.queryId]);
 
     return tbUseResultTable(query.queryId, tinyBased.queries) as Record<
       string,
@@ -233,11 +235,13 @@ export function makeTinybasedHooks<
   const useQueryResultIds = (qb: QueryBuilder<TBSchema>) => {
     const query = useMemo(() => qb.build(), [qb.queryId]);
 
-    useEffect(() => {
-      return () => {
-        tinyBased.queries.delQueryDefinition(query.queryId);
-      };
-    }, [tinyBased, query.queryId]);
+    // TODO: It would be nice to clean up the query definitions on unmount but this
+    // appears to be causing problems where the definitions get lost and not properly put back
+    // useEffect(() => {
+    //   return () => {
+    //     tinyBased.queries.delQueryDefinition(query.queryId);
+    //   };
+    // }, [tinyBased, query.queryId]);
 
     return useResultRowIds(query.queryId, tinyBased.queries);
   };
@@ -262,11 +266,13 @@ export function makeTinybasedHooks<
     const { descending = false, offset, limit } = sortOptions || {};
     const query = useMemo(() => qb.build(), [qb.queryId]);
 
-    useEffect(() => {
-      return () => {
-        tinyBased.queries.delQueryDefinition(query.queryId);
-      };
-    }, [tinyBased, query.queryId]);
+    // TODO: It would be nice to clean up the query definitions on unmount but this
+    // appears to be causing problems where the definitions get lost and not properly put back
+    // useEffect(() => {
+    //   return () => {
+    //     tinyBased.queries.delQueryDefinition(query.queryId);
+    //   };
+    // }, [tinyBased, query.queryId]);
 
     return useResultSortedRowIds(
       query.queryId,
