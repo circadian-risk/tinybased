@@ -28,6 +28,7 @@ const SCOOB = {
   id: 'abc123',
   isAdmin: false,
   name: 'Scoob',
+  isAdult: true,
 };
 
 describe('Linking Searcher to a tinybased (hydration, row add/update/remove)', () => {

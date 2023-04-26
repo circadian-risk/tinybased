@@ -34,7 +34,11 @@ export class TinyBased<
   TBSchema extends TinyBaseSchema = {},
   TRelationshipNames extends string = never,
   TRelationships extends Relationships<TBSchema> = {},
-  TKeyValueSchema extends Table = {}
+  TKeyValueSchema extends Table = {},
+  /**
+   * Tracking the computed keys for tables so that they can be excluded from setters
+   */
+  TComputedKeys extends Partial<Record<OnlyStringKeys<TBSchema>, string>> = {}
 > {
   public readonly store: Store;
   public readonly metrics: Metrics;
@@ -259,7 +263,9 @@ export class TinyBased<
   setRow<TTable extends OnlyStringKeys<TBSchema>>(
     table: TTable,
     rowId: string,
-    row: TBSchema[TTable]
+    row: TComputedKeys[TTable] extends string
+      ? Omit<TBSchema[TTable], TComputedKeys[TTable]>
+      : TBSchema[TTable]
   ) {
     this.store.setRow(table, rowId, row);
   }
@@ -271,7 +277,11 @@ export class TinyBased<
   mergeRow<TTable extends OnlyStringKeys<TBSchema>>(
     table: TTable,
     rowId: string,
-    toMerge: Partial<TBSchema[TTable]>
+    toMerge: Partial<
+      TComputedKeys[TTable] extends string
+        ? Omit<TBSchema[TTable], TComputedKeys[TTable]>
+        : TBSchema[TTable]
+    >
   ) {
     if (!this.hasRow(table, rowId)) {
       throw new Error(
@@ -344,7 +354,9 @@ export class TinyBased<
    */
   setTable<TTable extends OnlyStringKeys<TBSchema>>(
     tableName: TTable,
-    rows: TBSchema[TTable][]
+    rows: TComputedKeys[TTable] extends string
+      ? Omit<TBSchema[TTable], TComputedKeys[TTable]>[]
+      : TBSchema[TTable][]
   ) {
     const table = this.tables.get(tableName);
     if (!table) {
@@ -365,7 +377,9 @@ export class TinyBased<
    */
   bulkUpsert<TTable extends OnlyStringKeys<TBSchema>>(
     tableName: TTable,
-    rows: TBSchema[TTable][]
+    rows: TComputedKeys[TTable] extends string
+      ? Omit<TBSchema[TTable], TComputedKeys[TTable]>[]
+      : TBSchema[TTable][]
   ) {
     const table = this.tables.get(tableName);
     if (!table) {
@@ -392,7 +406,7 @@ export class TinyBased<
   >(
     table: TTable,
     rowId: string,
-    cellId: TCell,
+    cellId: TCell extends TComputedKeys[TTable] ? never : TCell,
     value: TBSchema[TTable][TCell]
   ) {
     if (value == null) {

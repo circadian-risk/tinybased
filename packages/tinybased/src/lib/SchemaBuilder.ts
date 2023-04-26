@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 import { Schema } from '../fixture/database';
-import { TableBuilder } from './TableBuilder';
+import { CellSchema, TableBuilder } from './TableBuilder';
 import { TinyBased } from './tinybased';
 import {
   DeepPrettify,
@@ -23,7 +23,13 @@ export class SchemaBuilder<
   TBSchema extends TinyBaseSchema = {},
   TRelationshipNames extends string = never,
   TRelationships extends Relationships<TBSchema> = {},
-  TKeyValueSchema extends Table = {}
+  TKeyValueSchema extends Table = {},
+  /**
+   * Tracking the computed keys for tables so that they can be excluded from setters
+   */
+  TComputedKeys extends Partial<
+    Record<OnlyStringKeys<TinyBaseSchema>, string>
+  > = {}
 > {
   public readonly tables: Map<
     string,
@@ -36,6 +42,9 @@ export class SchemaBuilder<
   private persisters = new Set<SchemaPersister<TBSchema>>();
   private rowRemovedHandlers = new Set<RowChangeHandler<TBSchema>>();
   private rowAddedOrUpdatedHandlers = new Set<RowChangeHandler<TBSchema>>();
+  private computedCellRowChangeListeners = new Set<
+    CellSchema & { table: string }
+  >();
 
   public defineRelationship<
     TRelationshipName extends string,
@@ -52,7 +61,8 @@ export class SchemaBuilder<
     TRelationshipNames | TRelationshipName,
     TRelationships &
       Record<TRelationshipName, { from: TTableFrom; to: TTableTo }>,
-    TKeyValueSchema
+    TKeyValueSchema,
+    TComputedKeys
   > {
     this.relationshipDefinitions.push({
       name,
@@ -64,19 +74,34 @@ export class SchemaBuilder<
     return this as any;
   }
 
-  public addTable<TName extends string, TCells extends Record<string, unknown>>(
-    tableBuilder: TableBuilder<TName, TCells>
+  public addTable<
+    TName extends string,
+    TCells extends Record<string, unknown>,
+    TComputedCells extends string
+  >(
+    tableBuilder: TableBuilder<TName, TCells, TComputedCells>
   ): SchemaBuilder<
     TBSchema & Record<TName, TCells>,
     TRelationshipNames,
     TRelationships,
-    TKeyValueSchema
+    TKeyValueSchema,
+    TComputedKeys & Record<TName, TComputedCells>
   > {
     if (this.tables.has(tableBuilder.tableName)) {
       throw new Error(`Table ${tableBuilder.tableName} already defined`);
     }
 
     this.tables.set(tableBuilder.tableName, tableBuilder);
+
+    // If the table has computed columns, add row listeners for the computed columns
+    const computedColumns = tableBuilder.cells.filter((cell) => cell.compute);
+
+    computedColumns.forEach((computedColumn) => {
+      this.computedCellRowChangeListeners.add({
+        table: tableBuilder.tableName,
+        ...computedColumn,
+      });
+    });
 
     return this as any;
   }
@@ -88,7 +113,8 @@ export class SchemaBuilder<
     TBSchema,
     TRelationshipNames,
     TRelationships,
-    TKeyValueSchema & Record<TKeyName, CellTypeMap[TValueType]>
+    TKeyValueSchema & Record<TKeyName, CellTypeMap[TValueType]>,
+    TComputedKeys
   > {
     // TODO
     return this as any;
@@ -105,13 +131,20 @@ export class SchemaBuilder<
   }
 
   public async build(): Promise<
-    TinyBased<TBSchema, TRelationshipNames, TRelationships, TKeyValueSchema>
+    TinyBased<
+      TBSchema,
+      TRelationshipNames,
+      TRelationships,
+      TKeyValueSchema,
+      TComputedKeys
+    >
   > {
     const tb = new TinyBased<
       TBSchema,
       TRelationshipNames,
       TRelationships,
-      TKeyValueSchema
+      TKeyValueSchema,
+      TComputedKeys
     >(this.tables, this.relationshipDefinitions);
 
     // Init persisters
@@ -168,6 +201,21 @@ export class SchemaBuilder<
     });
 
     tb.init();
+    this.computedCellRowChangeListeners.forEach(({ name, table, compute }) => {
+      if (!compute) return;
+      tb.store.addRowListener(
+        table,
+        null,
+        (store, tableId, rowId) => {
+          const hasRow = store.hasRow(tableId, rowId);
+          if (!hasRow) return;
+          const row = store.getRow(tableId, rowId);
+          const computedValue = compute(row);
+          store.setCell(table, rowId, name, computedValue);
+        },
+        true
+      );
+    });
     this.persisters = new Set();
 
     return tb as any;

@@ -2,6 +2,7 @@ import { notesTable, usersTable } from '../fixture/database';
 import {
   InferSchema,
   InferTinyBasedFromSchemaBuilder,
+  Prettify,
   SchemaPersister,
   Table,
 } from './types';
@@ -18,6 +19,7 @@ const exampleUser = {
   name: 'Jesse',
   age: 33,
   isAdmin: true,
+  isAdult: true,
 };
 
 const exampleNote = {
@@ -67,6 +69,8 @@ describe('tinybased', () => {
           id: '1',
           isAdmin: true,
           name: 'Jesse',
+          // Computed column cannot be set directly
+          // isAdult: false
         },
       ]);
 
@@ -76,6 +80,7 @@ describe('tinybased', () => {
           id: '1',
           isAdmin: true,
           name: 'Jesse',
+          isAdult: true,
         },
       });
     });
@@ -92,7 +97,13 @@ describe('tinybased', () => {
       expectTypeOf(table).toEqualTypeOf<
         Record<
           string,
-          { id: string; name: string; age: number; isAdmin: boolean }
+          {
+            id: string;
+            name: string;
+            age: number;
+            isAdmin: boolean;
+            isAdult: boolean;
+          }
         >
       >();
     });
@@ -118,8 +129,20 @@ describe('tinybased', () => {
       });
 
       const newUsers = [
-        { id: USER_ID_1, name: 'Jesse', age: 33, isAdmin: false },
-        { id: USER_ID_2, name: 'Deep', age: 25, isAdmin: false },
+        {
+          id: USER_ID_1,
+          name: 'Jesse',
+          age: 33,
+          isAdmin: false,
+          isAdult: true,
+        },
+        {
+          id: USER_ID_2,
+          name: 'Deep',
+          age: 16,
+          isAdmin: false,
+          isAdult: false,
+        },
       ];
 
       based.bulkUpsert('users', newUsers);
@@ -138,11 +161,12 @@ describe('tinybased', () => {
         name: 'Jesse',
         age: 33,
         isAdmin: true,
+        isAdult: true,
       });
 
       based.mergeRow('users', USER_ID_1, {
         isAdmin: false,
-        age: 42,
+        age: 16,
         name: undefined,
       });
 
@@ -150,8 +174,9 @@ describe('tinybased', () => {
 
       expect(afterMerge).toMatchObject({
         id: USER_ID_1,
-        age: 42,
+        age: 16,
         isAdmin: false,
+        isAdult: false,
       });
     });
 
@@ -188,11 +213,12 @@ describe('tinybased', () => {
         name: 'Jesse',
         age: 33,
         isAdmin: true,
+        isAdult: true,
       });
 
       based.mergeRow('users', USER_ID_1, {
         isAdmin: false,
-        age: 42,
+        age: 16,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         name: null as any,
       });
@@ -203,8 +229,9 @@ describe('tinybased', () => {
       // which should delete the cell from the underlying row
       expect(afterMerge).toMatchObject({
         id: USER_ID_1,
-        age: 42,
+        age: 16,
         isAdmin: false,
+        isAdult: false,
       });
     });
   });
@@ -391,7 +418,7 @@ describe('tinybased', () => {
     expectTypeOf(based.getSortedRowIds).parameter(0).toEqualTypeOf<'users'>();
     expectTypeOf(based.getSortedRowIds)
       .parameter(1)
-      .toEqualTypeOf<'name' | 'id' | 'age' | 'isAdmin'>();
+      .toEqualTypeOf<'name' | 'id' | 'age' | 'isAdmin' | 'isAdult'>();
   });
 
   it('hasRow: should return boolean if row exists or not by id', async () => {
@@ -593,25 +620,28 @@ describe('tinybased', () => {
     it('calls onInit on build and can access schema', async () => {
       await basedSchema.build();
       expect(mockStorage['__databaseName']).toEqual('test_db');
-      expect(mockStorage['__schema']).toEqual({
-        users: {
-          cells: [
-            { name: 'id', type: 'string' },
-            { name: 'name', type: 'string' },
-            { name: 'age', type: 'number' },
-            { name: 'isAdmin', type: 'boolean' },
-          ],
-          keyBy: ['id'],
-        },
-        notes: {
-          cells: [
-            { name: 'id', type: 'string' },
-            { name: 'userId', type: 'string' },
-            { name: 'text', type: 'string', optional: true }, // optional
-          ],
-          keyBy: ['id', 'userId'], // composite key
-        },
-      });
+      expect(mockStorage['__schema']).toEqual(
+        expect.objectContaining({
+          users: {
+            cells: [
+              { name: 'id', type: 'string' },
+              { name: 'name', type: 'string' },
+              { name: 'age', type: 'number' },
+              { name: 'isAdult', type: 'boolean', compute: expect.anything() },
+              { name: 'isAdmin', type: 'boolean' },
+            ],
+            keyBy: ['id'],
+          },
+          notes: {
+            cells: [
+              { name: 'id', type: 'string' },
+              { name: 'userId', type: 'string' },
+              { name: 'text', type: 'string', optional: true }, // optional
+            ],
+            keyBy: ['id', 'userId'], // composite key
+          },
+        })
+      );
     });
 
     it('hydrates from persister', async () => {
@@ -662,6 +692,157 @@ describe('tinybased', () => {
       expect(onRowAddedOrUpdated).not.toBeCalled();
       expect(otherEventHandlers).not.toBeCalled();
       expect(based.getRow('users', USER_ID_1)).toEqual(exampleUser);
+    });
+  });
+
+  describe('computed columns', () => {
+    describe('isolated table computed columns', () => {
+      // for computed columns that only depend on their own table
+
+      /**
+       * DRY interface denoting what the 'hasComputedColumn' table excluding the computed columns should be
+       */
+      interface ExcludingComputedCells {
+        id: string;
+        answered: number;
+        total: number;
+      }
+
+      const tableWithComputedColumn = new TableBuilder('hasComputedColumn')
+        .add('id', 'string')
+        .add('total', 'number')
+        .add('answered', 'number')
+        .addComputed('percentage', 'number', ({ answered, total }) => {
+          return (answered / total) * 100;
+        })
+        .addComputed('status', 'string', ({ percentage }) => {
+          if (percentage === 100) return 'Complete';
+          if (percentage > 0) return 'Started';
+          return 'NotStarted';
+        });
+
+      const schema = new SchemaBuilder().addTable(tableWithComputedColumn);
+      let based!: Awaited<ReturnType<(typeof schema)['build']>>;
+
+      beforeAll(async () => {
+        based = await schema.build();
+      });
+
+      describe('Setter functions exclude computed columns', () => {
+        it('setTable', () => {
+          expectTypeOf(based.setTable)
+            .parameter(1)
+            .toEqualTypeOf<ExcludingComputedCells[]>();
+        });
+
+        it('bulkUpsert', () => {
+          expectTypeOf(based.bulkUpsert)
+            .parameter(1)
+            .toEqualTypeOf<ExcludingComputedCells[]>();
+        });
+        it('setRow', () => {
+          expectTypeOf(based.setRow).parameters.toEqualTypeOf<
+            ['hasComputedColumn', string, ExcludingComputedCells]
+          >();
+        });
+
+        // TODO: toEqualTypeOf doesn't work well with Partial of mergeRow
+        // it('mergeRow', async () => {
+        //   expectTypeOf(based.mergeRow).parameters.toEqualTypeOf<
+        //     [
+        //       'hasComputedColumn',
+        //       string,
+        //       // 'percentage' and 'status' are computed and therefore ignored for setCell
+        //       // Issue with Partial in toEqualTypeOf
+        //       Partial<ExcludingComputedCells & {stuff: string}>
+        //     ]
+        //   >();
+        // });
+
+        it('setCell', () => {
+          expectTypeOf(based.setCell).parameters.toEqualTypeOf<
+            [
+              'hasComputedColumn',
+              string,
+              // 'percentage' and 'status' are computed and therefore ignored for setCell
+              'id' | 'answered' | 'total', //| 'percentage' | 'status',
+              any
+            ]
+          >();
+        });
+      });
+
+      it('can define and compute columns based on one or more columns in this table', () => {
+        // 0% / "NotStarted"
+        based.setRow('hasComputedColumn', '1', {
+          // percentage: 45, // this should not be allowed here as it is a computed column
+          id: '1',
+          answered: 0,
+          total: 10,
+        });
+
+        expect(based.getCell('hasComputedColumn', '1', 'percentage')).toBe(0);
+        expect(based.getCell('hasComputedColumn', '1', 'status')).toBe(
+          'NotStarted'
+        );
+
+        // 50% / "Started"
+        based.setCell('hasComputedColumn', '1', 'answered', 5);
+
+        expect(based.getCell('hasComputedColumn', '1', 'percentage')).toBe(50);
+        expect(based.getCell('hasComputedColumn', '1', 'status')).toBe(
+          'Started'
+        );
+
+        // 100% / "Complete"
+        based.setCell('hasComputedColumn', '1', 'answered', 10);
+
+        expect(based.getCell('hasComputedColumn', '1', 'percentage')).toBe(100);
+        expect(based.getCell('hasComputedColumn', '1', 'status')).toBe(
+          'Complete'
+        );
+
+        // Demonstrating types of other methods
+        // Type not allowed
+        // based.setCell('hasComputedColumn', '1', 'percentage', 3);
+
+        based.mergeRow('hasComputedColumn', '1', {
+          answered: 5,
+          id: '1',
+          total: 20,
+          // Below keys are not allowed for mergeRow as they are computed
+          // percentage: 50,
+          // status: 'NotStarted'
+        });
+
+        based.bulkUpsert('hasComputedColumn', [
+          {
+            id: '2',
+            answered: 2,
+            total: 10,
+            // below keys are not allowed for bulkUpsert
+            // percentage: 50,
+            // status: 'NotStarted'
+          },
+        ]);
+
+        based.setTable('hasComputedColumn', [
+          {
+            id: '3',
+            answered: 0,
+            total: 10,
+            // below keys are not allowed for bulkUpsert
+            // percentage: 50,
+            // status: 'NotStarted'
+          },
+        ]);
+      });
+    });
+
+    // TODO: CR-2993
+    describe('inter-table computed columns', () => {
+      // for computed columns that depend on another table
+      it.todo('Supports inter-table computed columns');
     });
   });
 });

@@ -10,6 +10,9 @@ export const usersTable = new TableBuilder('users')
   .add('id', 'string')
   .add('name', 'string')
   .add('age', 'number')
+  .addComputed('isAdult', 'boolean', ({ age }) => {
+    return age > 18;
+  })
   .add('isAdmin', 'boolean');
 
 export const notesTable = new TableBuilder('notes')
@@ -34,6 +37,7 @@ export const USER_1: UserRow = {
   name: 'Jesse',
   age: 33,
   isAdmin: true,
+  isAdult: true,
 };
 
 export const USER_2: UserRow = {
@@ -48,6 +52,7 @@ export const USER_3: UserRow = {
   id: USER_ID_3,
   age: 16,
   name: 'Jesse',
+  isAdult: false,
 };
 
 export const USER_4: UserRow = {
