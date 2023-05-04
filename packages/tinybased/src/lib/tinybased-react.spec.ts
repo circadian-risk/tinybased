@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import {
   makeTinyBasedTestFixture,
   NOTE_ID,
+  NOTE_1,
+  NOTE_2,
   NOTE_ID_2,
   USER_ID_1,
   USER_ID_2,
@@ -209,6 +212,32 @@ describe('Tinybased React', () => {
         }>();
 
         expect(agg.total).toEqual(3);
+      });
+
+      it('dynamic condition, recomputing result by specified unique id', () => {
+        const useTest = () => {
+          const [noteTexts, setNoteText] = useState([NOTE_1.text]);
+          const resultIds = hooks.useQueryResultIds(
+            based
+              .query('notes')
+              .select('id')
+              .whereUsing((getCell) => noteTexts.includes(getCell('text')))
+              .identifyBy(noteTexts.join('-'))
+          );
+
+          return {
+            setNoteText,
+            resultIds,
+          };
+        };
+
+        const { result } = renderHook(useTest);
+
+        expect(result.current.resultIds).toEqual([NOTE_ID]);
+
+        result.current.setNoteText([NOTE_2.text, NOTE_1.text]);
+
+        expect(result.current.resultIds).toEqual([NOTE_ID, NOTE_ID_2]);
       });
     });
   });
