@@ -286,4 +286,16 @@ describe('QueryBuilder', () => {
       )
     );
   });
+
+  it('custom ids can be specified', async () => {
+    const db = await sb.build();
+    const qb = db
+      .query('notes')
+      .select('id')
+      .whereUsing((getCell) => getCell('isDraft') === true)
+      .identifyBy('my-custom-id')
+      .build();
+
+    expect(qb.queryId).toEqual('my-custom-id');
+  });
 });
