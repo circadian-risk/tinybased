@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/ban-types */
-import { RowListener } from 'tinybase/store';
 import { SchemaBuilder } from './SchemaBuilder';
 import { CellSchema } from './TableBuilder';
 import { TinyBased } from './tinybased';
@@ -69,9 +68,10 @@ export type InferTinyBasedFromSchemaBuilder<SB> = SB extends SchemaBuilder<
   infer S,
   infer RNs,
   infer R,
-  infer KV
+  infer KV,
+  infer CK
 >
-  ? TinyBased<S, RNs, R, KV>
+  ? TinyBased<S, RNs, R, KV, CK>
   : never;
 
 export type HydrateConfig<
