@@ -837,6 +837,48 @@ describe('tinybased', () => {
           },
         ]);
       });
+
+      it('can compute on data loading from hydration', async () => {
+        const based = await new SchemaBuilder()
+          .addTable(tableWithComputedColumn)
+          .defineHydrators({
+            hasComputedColumn: async () => {
+              return [
+                {
+                  id: '1',
+                  answered: 5,
+                  total: 10,
+                  status: 'Started',
+                  percentage: 10,
+                },
+              ];
+            },
+          })
+          .build();
+
+        expect(based.getCell('hasComputedColumn', '1', 'percentage')).toBe(50);
+      });
+
+      it('can compute on data loading from persister', async () => {
+        const based = await new SchemaBuilder()
+          .addTable(tableWithComputedColumn)
+          .addPersister({
+            getTable: async () => {
+              return [
+                {
+                  id: '1',
+                  answered: 5,
+                  total: 10,
+                  status: 'Started',
+                  percentage: 10,
+                },
+              ];
+            },
+          })
+          .build();
+
+        expect(based.getCell('hasComputedColumn', '1', 'percentage')).toBe(50);
+      });
     });
 
     // TODO: CR-2993
