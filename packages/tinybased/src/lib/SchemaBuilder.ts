@@ -181,6 +181,22 @@ export class SchemaBuilder<
       });
     });
 
+    this.computedCellRowChangeListeners.forEach(({ name, table, compute }) => {
+      if (!compute) return;
+      tb.store.addRowListener(
+        table,
+        null,
+        (store, tableId, rowId) => {
+          const hasRow = store.hasRow(tableId, rowId);
+          if (!hasRow) return;
+          const row = store.getRow(tableId, rowId);
+          const computedValue = compute(row);
+          store.setCell(table, rowId, name, computedValue);
+        },
+        true
+      );
+    });
+
     await tb.hydrate();
 
     // Event handlers
@@ -201,21 +217,6 @@ export class SchemaBuilder<
     });
 
     tb.init();
-    this.computedCellRowChangeListeners.forEach(({ name, table, compute }) => {
-      if (!compute) return;
-      tb.store.addRowListener(
-        table,
-        null,
-        (store, tableId, rowId) => {
-          const hasRow = store.hasRow(tableId, rowId);
-          if (!hasRow) return;
-          const row = store.getRow(tableId, rowId);
-          const computedValue = compute(row);
-          store.setCell(table, rowId, name, computedValue);
-        },
-        true
-      );
-    });
     this.persisters = new Set();
 
     return tb as any;
