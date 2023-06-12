@@ -12,6 +12,12 @@ const sb = new SchemaBuilder()
     new TableBuilder('user_permission')
       .add('id', 'string')
       .add('type', 'string')
+      .add('groupId', 'string')
+  )
+  .addTable(
+    new TableBuilder('permission_groups')
+      .add('id', 'string')
+      .add('name', 'string')
   )
   .addTable(
     new TableBuilder('notes')
@@ -34,17 +40,35 @@ const sb = new SchemaBuilder()
     'user_permission',
     'permissionId'
   )
+  .defineRelationship(
+    'groupPermission',
+    'user_permission',
+    'permission_groups',
+    'groupId'
+  )
   .defineRelationship('noteTagNotes', 'noteTags', 'notes', 'noteId')
   .defineRelationship('noteTagTags', 'noteTags', 'tags', 'tagId')
   .defineHydrators({
+    permission_groups: async () => [
+      {
+        id: 'group1',
+        name: 'admin-group',
+      },
+      {
+        id: 'group2',
+        name: 'user-group',
+      },
+    ],
     user_permission: async () => [
       {
         id: 'permission1',
         type: 'admin',
+        groupId: 'group1',
       },
       {
         id: 'permission2',
         type: 'user',
+        groupId: 'group2',
       },
     ],
     users: async () => [
@@ -222,6 +246,8 @@ describe('QueryBuilder', () => {
       .selectFrom('users', 'name')
       .joinFrom('userNotes', 'userPermission')
       .selectFrom('user_permission', 'type')
+      .joinFrom('userPermission', 'groupPermission')
+      .selectFromAs('permission_groups', 'name', 'groupName')
       .build();
 
     const result = qb.getResultTable();
@@ -230,16 +256,19 @@ describe('QueryBuilder', () => {
         id: 'note1',
         name: 'Jesse',
         type: 'admin',
+        groupName: 'admin-group',
       },
       note2: {
         id: 'note2',
         name: 'Jesse',
         type: 'admin',
+        groupName: 'admin-group',
       },
       note3: {
         id: 'note3',
         name: 'Christyn',
         type: 'user',
+        groupName: 'user-group',
       },
     });
   });

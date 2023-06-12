@@ -124,7 +124,7 @@ export class QueryBuilder<
   ): QueryBuilder<
     TSchema,
     TRelationships,
-    TStartTable,
+    TStartTable | TRelationships[TRelationshipName]['to'],
     TJoinedTables | TRelationships[TargetRelationShip]['to'],
     TSelection,
     TResult
