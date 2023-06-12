@@ -2,7 +2,17 @@ import { SchemaBuilder } from '../SchemaBuilder';
 import { TableBuilder } from '../TableBuilder';
 
 const sb = new SchemaBuilder()
-  .addTable(new TableBuilder('users').add('id', 'string').add('name', 'string'))
+  .addTable(
+    new TableBuilder('users')
+      .add('id', 'string')
+      .add('name', 'string')
+      .addOptional('permissionId', 'string')
+  )
+  .addTable(
+    new TableBuilder('user_permission')
+      .add('id', 'string')
+      .add('type', 'string')
+  )
   .addTable(
     new TableBuilder('notes')
       .add('id', 'string')
@@ -18,17 +28,35 @@ const sb = new SchemaBuilder()
       .keyBy(['noteId', 'tagId'])
   )
   .defineRelationship('userNotes', 'notes', 'users', 'userId')
+  .defineRelationship(
+    'userPermission',
+    'users',
+    'user_permission',
+    'permissionId'
+  )
   .defineRelationship('noteTagNotes', 'noteTags', 'notes', 'noteId')
   .defineRelationship('noteTagTags', 'noteTags', 'tags', 'tagId')
   .defineHydrators({
+    user_permission: async () => [
+      {
+        id: 'permission1',
+        type: 'admin',
+      },
+      {
+        id: 'permission2',
+        type: 'user',
+      },
+    ],
     users: async () => [
       {
         id: 'user1',
         name: 'Jesse',
+        permissionId: 'permission1',
       },
       {
         id: 'user2',
         name: 'Christyn',
+        permissionId: 'permission2',
       },
     ],
     notes: async () => [
@@ -180,6 +208,38 @@ describe('QueryBuilder', () => {
         theTagId: 'tag2',
         userId: 'user1',
         tagName: 'work',
+      },
+    });
+  });
+
+  it('supports local and intermediate joined field selection', async () => {
+    const db = await sb.build();
+
+    const qb = db
+      .query('notes')
+      .select('id')
+      .join('userNotes')
+      .selectFrom('users', 'name')
+      .joinFrom('userNotes', 'userPermission')
+      .selectFrom('user_permission', 'type')
+      .build();
+
+    const result = qb.getResultTable();
+    expect(result).toEqual({
+      note1: {
+        id: 'note1',
+        name: 'Jesse',
+        type: 'admin',
+      },
+      note2: {
+        id: 'note2',
+        name: 'Jesse',
+        type: 'admin',
+      },
+      note3: {
+        id: 'note3',
+        name: 'Christyn',
+        type: 'user',
       },
     });
   });

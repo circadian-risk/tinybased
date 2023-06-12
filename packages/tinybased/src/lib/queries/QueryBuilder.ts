@@ -46,6 +46,7 @@ export class QueryBuilder<
 > {
   private _queryId?: string;
   private readonly joins: Array<[string, string]> = [];
+  private readonly intermediateJoins: Array<[string, string, string]> = [];
   private readonly selects: string[] = [];
   private readonly wheres: Array<[string, Cell]> = [];
   private readonly selectsWithAlias: Array<[string, string]> = [];
@@ -105,6 +106,34 @@ export class QueryBuilder<
       (r) => r.name === _relationshipName
     )!;
     this.joins.push([to, cell]);
+    return this;
+  }
+
+  joinFrom<
+    TRelationshipName extends MatchingRelationships<
+      TStartTable,
+      TRelationships
+    >,
+    TargetRelationShip extends MatchingRelationships<
+      TRelationships[TRelationshipName]['to'],
+      TRelationships
+    >
+  >(
+    _from: TRelationshipName,
+    _relationshipName: TargetRelationShip
+  ): QueryBuilder<
+    TSchema,
+    TRelationships,
+    TStartTable,
+    TJoinedTables | TRelationships[TargetRelationShip]['to'],
+    TSelection,
+    TResult
+  > {
+    const { to: from } = this.relationshipDefs.find((r) => r.name === _from)!;
+    const { to, cell } = this.relationshipDefs.find(
+      (r) => r.name === _relationshipName
+    )!;
+    this.intermediateJoins.push([to, from, cell]);
     return this;
   }
 
@@ -341,6 +370,9 @@ export class QueryBuilder<
       ({ where, join, select, group }) => {
         this.joins.forEach(([to, cell]) => {
           join(to, cell);
+        });
+        this.intermediateJoins.forEach(([to, from, cell]) => {
+          join(to, from, cell);
         });
 
         this.wheres.forEach(([cell, value]) => where(cell, value));
