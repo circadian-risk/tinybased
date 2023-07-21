@@ -1,5 +1,11 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SchemaBuilder } from '../SchemaBuilder';
 import { TableBuilder } from '../TableBuilder';
+import { makeTinybasedHooks } from '../tinybased-react';
+import { renderHook } from '@testing-library/react-hooks';
+import { waitAMoment } from '../../testing/utils';
+import { createQueries } from 'tinybase/queries';
+import { useResultTable } from 'tinybase/cjs/ui-react';
 
 const sb = new SchemaBuilder()
   .addTable(
@@ -386,5 +392,361 @@ describe('QueryBuilder', () => {
       .build();
 
     expect(qb.queryId).toEqual('my-custom-id');
+  });
+
+  it('supports outside variables in custom where clause', async () => {
+    const db = await sb.build();
+    const hooks = makeTinybasedHooks(db);
+
+    const useTestHook = () => {
+      // const [isDraft, setIsDraft] = useState<boolean>(false);
+      // const [noteIds, setNoteIds] = useState<string[]>(['note2', 'note3']);
+
+      const noteIds = hooks.useQueryResultIds(
+        db
+          .query('notes')
+          .select('id')
+          .select('isDraft')
+          .whereUsing((getCell) => getCell('isDraft') === false)
+      );
+
+      // const noteIds = useMemo(() => {
+      //   console.log('isDraft', isDraft);
+      //   return db
+      //     .query('notes')
+      //     .select('id')
+      //     .select('isDraft')
+      //     .whereUsing((getCell) => getCell('isDraft') === isDraft)
+      //     .identifyBy(`noteIds-results-${isDraft}`)
+      //     .build()
+      //     .getResultRowIds();
+      // }, [isDraft]);
+
+      const getCell = useCallback(
+        (getCell) => noteIds.includes(getCell('id')),
+        [noteIds]
+      );
+      console.log('noteIds', noteIds);
+
+      const rows = useMemo(() => {
+        const result = db
+          .query('notes')
+          .select('id')
+          .select('isDraft')
+          .whereUsing((getCell) => {
+            console.log('checking for id', getCell('id'), 'in', noteIds);
+            return noteIds.includes(getCell('id'));
+          })
+          .identifyBy(`notes-results-${noteIds.join('-')}`)
+          .build()
+          .getResultTable();
+        console.log('rows', result);
+        return result;
+      }, [getCell]);
+
+      // const rows = useResultTable(query.queryId, query.queries);
+
+      // console.log('notes rows', rows);
+
+      // const legacyQuery = useMemo(
+      //   () =>
+      //     createQueries(db.store).setQueryDefinition(
+      //       `notes-results-legacy-${noteIds.join('-')}`,
+      //       'notes',
+      //       ({ where, select }) => {
+      //         where((getCell) =>
+      //           noteIds.includes(getCell('id')?.toString() ?? '')
+      //         );
+      //         select('id');
+      //         select('isDraft');
+      //       }
+      //     ),
+      //   [noteIds]
+      // );
+
+      // const legacyRows = useResultTable(
+      //   `notes-results-legacy-${noteIds.join('-')}`,
+      //   legacyQuery
+      // );
+
+      // console.log('legacy rows', legacyRows);
+
+      // console.log('----------------------------');
+
+      const updateRows = () => {
+        db.mergeRow('notes', 'note3', {
+          isDraft: true,
+        });
+        // setNoteIds(['note2']);
+        // setIsDraft(true);
+      };
+
+      return { rows, updateRows };
+    };
+
+    const output = renderHook(() => useTestHook());
+
+    expect(output.result.current.rows).toEqual({
+      note2: {
+        id: 'note2',
+        isDraft: false,
+      },
+      note3: {
+        id: 'note3',
+        isDraft: false,
+      },
+    });
+
+    output.result.current.updateRows();
+
+    await waitAMoment();
+
+    expect(output.result.current.rows).toEqual({
+      note2: {
+        id: 'note2',
+        isDraft: false,
+      },
+    });
+  });
+
+  describe('supports outside variables in custom where clause', () => {
+    it.only('with other query result', async () => {
+      const db = await sb.build();
+      const hooks = makeTinybasedHooks(db);
+
+      const useTestHook = () => {
+        useEffect(() => {
+          console.log('db.queries');
+        }, [db.queries]);
+
+        const noteIds = hooks.useQueryResultIds(
+          db
+            .query('notes')
+            .select('id')
+            .select('isDraft')
+            .whereUsing((getCell) => getCell('isDraft') === false)
+        );
+
+        // const [latestNoteIds, setLatestNoteIds] = useState<string[]>(noteIds);
+
+        // useEffect(() => {
+        //   setLatestNoteIds(noteIds);
+        // }, [noteIds]);
+
+        // const rows = useMemo(() => {
+        //   const result = db
+        //     .query('notes')
+        //     .select('id')
+        //     .select('isDraft')
+        //     .identifyBy(`notes-results-${latestNoteIds.join('-')}`)
+        //     .build()
+        //     .getResultTable();
+
+        //   console.log('rows', result);
+        //   return result;
+        // }, [latestNoteIds]);
+
+        // const hookQuery = useMemo(
+        //   () =>
+        //     db
+        //       .query('notes')
+        //       .select('id')
+        //       .select('isDraft')
+        //       .identifyBy(`hooks-notes-results-${noteIds.join('-')}`),
+        //   [noteIds]
+        // );
+
+        const hookRows = hooks.useQueryResult(
+          db
+            .query('notes')
+            .select('id')
+            .select('isDraft')
+            .whereUsing((getCell) => {
+              console.log('checking for id', getCell('id'), 'in', noteIds);
+              return noteIds.includes(getCell('id'));
+            })
+            .identifyBy(`hooks-notes-results-${noteIds.join('-')}`)
+        );
+
+        console.log('hook rows', hookRows);
+        // const legacy = useResultTable(
+        //   `notes-results-legacy-${noteIds.join('-')}`,
+        //   createQueries(db.store).setQueryDefinition(
+        //     `notes-results-legacy-${noteIds.join('-')}`,
+        //     'notes',
+        //     ({ select }) => {
+        //       select('id');
+        //       select('isDraft');
+        //     }
+        //   )
+        // );
+
+        // console.log('legacy rows', legacy);
+
+        const updateRows = () => {
+          db.mergeRow('notes', 'note3', {
+            isDraft: true,
+          });
+        };
+
+        return { rows: {}, updateRows };
+      };
+
+      const output = renderHook(() => useTestHook());
+
+      // expect(output.result.current.rows).toEqual({
+      //   note1: {
+      //     id: 'note1',
+      //     isDraft: true,
+      //   },
+      //   note2: {
+      //     id: 'note2',
+      //     isDraft: false,
+      //   },
+      //   note3: {
+      //     id: 'note3',
+      //     isDraft: false,
+      //   },
+      // });
+
+      output.result.current.updateRows();
+
+      await waitAMoment();
+
+      // expect(output.result.current.rows).toEqual({
+      //   note1: {
+      //     id: 'note1',
+      //     isDraft: true,
+      //   },
+      //   note2: {
+      //     id: 'note2',
+      //     isDraft: false,
+      //   },
+      //   note3: {
+      //     id: 'note3',
+      //     isDraft: true,
+      //   },
+      // });
+    });
+
+    it('with state hook', async () => {
+      const db = await sb.build();
+
+      const useTestHook = () => {
+        const [noteIds, setNoteIds] = useState<string[]>(['note2', 'note3']);
+
+        const rows = useMemo(() => {
+          const result = db
+            .query('notes')
+            .select('id')
+            .select('isDraft')
+            .whereUsing((getCell) => {
+              return noteIds.includes(getCell('id'));
+            })
+            .identifyBy(`notes-results-${noteIds.join('-')}`)
+            .build()
+            .getResultTable();
+          return result;
+        }, [noteIds]);
+
+        const updateRows = () => {
+          setNoteIds(['note2']);
+        };
+
+        return { rows, updateRows };
+      };
+
+      const output = renderHook(() => useTestHook());
+
+      expect(output.result.current.rows).toEqual({
+        note2: {
+          id: 'note2',
+          isDraft: false,
+        },
+        note3: {
+          id: 'note3',
+          isDraft: false,
+        },
+      });
+
+      output.result.current.updateRows();
+
+      await waitAMoment();
+
+      expect(output.result.current.rows).toEqual({
+        note2: {
+          id: 'note2',
+          isDraft: false,
+        },
+      });
+    });
+
+    it('with legacy query hook', async () => {
+      const db = await sb.build();
+      const hooks = makeTinybasedHooks(db);
+
+      const useTestHook = () => {
+        const noteIds = hooks.useQueryResultIds(
+          db
+            .query('notes')
+            .select('id')
+            .select('isDraft')
+            .whereUsing((getCell) => getCell('isDraft') === false)
+        );
+
+        const query = useMemo(
+          () =>
+            createQueries(db.store).setQueryDefinition(
+              `notes-results-legacy-${noteIds.join('-')}`,
+              'notes',
+              ({ where, select }) => {
+                where((getCell) =>
+                  noteIds.includes(getCell('id')?.toString() ?? '')
+                );
+                select('id');
+                select('isDraft');
+              }
+            ),
+          [noteIds]
+        );
+
+        const rows = useResultTable(
+          `notes-results-legacy-${noteIds.join('-')}`,
+          query
+        );
+
+        const updateRows = () => {
+          db.mergeRow('notes', 'note3', {
+            isDraft: true,
+          });
+        };
+
+        return { rows, updateRows };
+      };
+
+      const output = renderHook(() => useTestHook());
+
+      expect(output.result.current.rows).toEqual({
+        note2: {
+          id: 'note2',
+          isDraft: false,
+        },
+        note3: {
+          id: 'note3',
+          isDraft: false,
+        },
+      });
+
+      output.result.current.updateRows();
+
+      await waitAMoment();
+
+      expect(output.result.current.rows).toEqual({
+        note2: {
+          id: 'note2',
+          isDraft: false,
+        },
+      });
+    });
   });
 });

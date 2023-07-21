@@ -48,7 +48,7 @@
     "@lyrasearch/lyra": "^0.4.11",
     "lodash": "^4.17.21",
     "react": "^17.0.2",
-    "tinybase": "^3.0.3"
+    "tinybase": "^4.0.0"
   },
   "volta": {
     "node": "16.19.1"

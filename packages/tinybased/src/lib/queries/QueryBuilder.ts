@@ -364,6 +364,7 @@ export class QueryBuilder<
       // weird issues in React
       return;
     }
+
     this.queries.setQueryDefinition(
       this.queryId,
       this.startTable,
