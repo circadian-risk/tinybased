@@ -12,6 +12,8 @@ import {
 import { makeTinybasedHooks, TinyBasedReactHooks } from './tinybased-react';
 
 import { renderHook } from '@testing-library/react-hooks';
+import { useResultRowIds, useResultTable } from 'tinybase/cjs/ui-react';
+import { waitAMoment } from '../testing/utils';
 
 describe('Tinybased React', () => {
   let based: Awaited<ReturnType<typeof makeTinyBasedTestFixture>>;
@@ -142,6 +144,50 @@ describe('Tinybased React', () => {
     });
 
     describe('queries', () => {
+      it('mimics our problem using raw TB', async () => {
+        const { result } = renderHook(() => {
+          based.queries.setQueryDefinition(
+            'ids',
+            'notes',
+            ({ select, where }) => {
+              select('text');
+              where('userId', USER_ID_1);
+            }
+          );
+
+          const idsResult = useResultRowIds('ids', based.queries);
+
+          const anotherQueryId = idsResult.join('-');
+          based.queries.setQueryDefinition(
+            anotherQueryId,
+            'notes',
+            ({ select, where }) => {
+              select('text');
+              where((getCell) =>
+                idsResult.includes(getCell('id')?.toString() ?? '')
+              );
+            }
+          );
+
+          const anotherResult = useResultTable(anotherQueryId, based.queries);
+
+          return { idsResult, anotherResult };
+        });
+
+        console.log(result.current);
+        based.setRow('notes', 'new note', {
+          id: 'new note',
+          text: 'testing',
+          userId: USER_ID_1,
+        });
+
+        console.log(result.current);
+
+        await waitAMoment();
+
+        console.log(result.current);
+      });
+
       it('result table', () => {
         const { result } = renderHook(() =>
           hooks.useQueryResult(
