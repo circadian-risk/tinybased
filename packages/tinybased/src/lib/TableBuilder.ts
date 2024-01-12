@@ -33,6 +33,22 @@ export type InferTable<T> = T extends TableBuilder<infer _TName, infer TCells>
   ? Prettify<TCells>
   : never;
 
+type RequiredIfId<T extends Record<string, unknown>> = T extends {
+  id?: infer Id;
+}
+  ? Omit<T, 'id'> & { id: Exclude<Id, null | undefined> }
+  : T;
+
+type KeyFields<
+  T extends string,
+  TCells extends Record<string, unknown>,
+  Fallback = RequiredIfId<Partial<TCells>>
+> = string extends T
+  ? Fallback
+  : T extends keyof TCells
+  ? Required<Pick<TCells, T>>
+  : Fallback;
+
 export class TableBuilder<
   TName extends string = never,
   // eslint-disable-next-line @typescript-eslint/ban-types
@@ -40,7 +56,8 @@ export class TableBuilder<
   /**
    * The columns of this table that are computed and therefore should not be set directly by the consumer
    */
-  TComputedColumns extends string = ''
+  TComputedColumns extends string = '',
+  TKeys extends string = string
 > {
   private readonly _cells: CellSchema[] = [];
 
@@ -128,18 +145,33 @@ export class TableBuilder<
     return this;
   }
 
-  keyBy<TCellName extends OnlyStringKeys<TCells>>(
-    // TODO: Do not allow computed columns as part of key [CR-2992]
-    cells: TCellName | TCellName[]
+  keyBy<TCellName extends Exclude<OnlyStringKeys<TCells>, TComputedColumns>>(
+    cells: Exclude<TCellName | TCellName[], never[]>
   ) {
+    if (cells.length === 0) {
+      throw new Error('Must provide at least one key');
+    }
+
     this._keys = Array.isArray(cells) ? cells : [cells];
-    return this;
+    return this as unknown as TableBuilder<
+      TName,
+      TCells,
+      TComputedColumns,
+      TCellName
+    >;
   }
 
-  composeKey(rowOrKeyValues: TCells | string[]) {
+  composeKey(
+    rowOrKeyValues: Prettify<KeyFields<TKeys, TCells>> | (string | number)[]
+  ) {
     const keyValues = Array.isArray(rowOrKeyValues)
       ? rowOrKeyValues
-      : this._keys.map((key) => rowOrKeyValues[key]);
+      : this._keys.map((key) => {
+          if (key in rowOrKeyValues) {
+            return rowOrKeyValues[key as keyof typeof rowOrKeyValues];
+          }
+          throw new Error(`Key ${key} missing`);
+        });
     return keyValues.join(this._keyDelimiter);
   }
 }

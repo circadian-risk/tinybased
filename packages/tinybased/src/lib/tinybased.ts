@@ -359,13 +359,14 @@ export class TinyBased<
       : TBSchema[TTable][]
   ) {
     const table = this.tables.get(tableName);
+
     if (!table) {
       throw new Error(`Tried to set rows for non-existent table ${tableName}`);
     }
 
     return this.store.setTable(
       tableName,
-      keyBy(rows, (e) => table.composeKey(e))
+      keyBy(rows, (e) => table.composeKey(e as any))
     );
   }
 
@@ -388,7 +389,7 @@ export class TinyBased<
 
     this.store.transaction(() => {
       rows.forEach((row) => {
-        this.store.setRow(tableName, table.composeKey(row), row);
+        this.store.setRow(tableName, table.composeKey(row as any), row);
       });
     });
   }
