@@ -45,12 +45,15 @@
     "packages/*"
   ],
   "dependencies": {
-    "@lyrasearch/lyra": "^0.4.11",
     "lodash": "^4.17.21",
     "react": "^17.0.2",
     "tinybase": "^3.0.3"
   },
   "volta": {
-    "node": "16.19.1"
+    "node": "16.19.1",
+    "pnpm": "8.14.1"
+  },
+  "engines": {
+    "pnpm": "8.14.1"
   }
 }
