@@ -59,6 +59,47 @@ describe('tinybased', () => {
     });
   });
 
+  describe('primary key', () => {
+    let usersTable = new TableBuilder('users')
+      .add('id', 'string')
+      .add('name', 'string');
+
+    beforeEach(async () => {
+      usersTable = new TableBuilder('users')
+        .add('id', 'string')
+        .add('name', 'string');
+    });
+
+    it('compose key', () => {
+      const userTableWithComposeKey = usersTable
+        .add('parent_id', 'number')
+        .keyBy(['id', 'parent_id']);
+
+      expect(
+        userTableWithComposeKey.composeKey({ id: '1', parent_id: 2 })
+      ).toBe('1::2');
+      expectTypeOf(userTableWithComposeKey.composeKey).toBeCallableWith({
+        id: '1',
+        parent_id: 2,
+      });
+    });
+
+    it('id is required column if no compose key specified and has id colum', () => {
+      expect(usersTable.composeKey({ id: '10' })).toBe('10');
+      expectTypeOf(usersTable.composeKey).toBeCallableWith({
+        id: '10',
+      });
+    });
+
+    it('one compose key', () => {
+      const userTableWithComposeKey = usersTable
+        .add('parent_id', 'number')
+        .keyBy(['parent_id']);
+
+      expect(userTableWithComposeKey.composeKey({ parent_id: 1 })).toBe('1');
+    });
+  });
+
   describe('Basic CRUD', () => {
     it('should provide a typesafe wrapper for setTable', async () => {
       const based = await baseBuilder.build();
